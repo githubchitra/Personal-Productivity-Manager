@@ -1,0 +1,101 @@
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-plus-circle"></i> Create New Progress Tracker
+                </h5>
+            </div>
+            <div class="card-body">
+                <form action="/progress/create" method="POST">
+                    {{#if error}}
+                    <div class="alert alert-danger">
+                        {{error}}
+                    </div>
+                    {{/if}}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tracker Name *</label>
+                        <input type="text" class="form-control" name="title" 
+                               value="{{formData.title}}" 
+                               placeholder="e.g., DSA Practice, Study Hours, Project Work" required>
+                        <div class="form-text">Give your tracker a clear, descriptive name</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" name="category">
+                                <option value="Study" {{#eq formData.category "Study"}}selected{{/eq}}>Study</option>
+                                <option value="Practice" {{#eq formData.category "Practice"}}selected{{/eq}}>Practice</option>
+                                <option value="Project" {{#eq formData.category "Project"}}selected{{/eq}}>Project</option>
+                                <option value="Fitness" {{#eq formData.category "Fitness"}}selected{{/eq}}>Fitness</option>
+                                <option value="Reading" {{#eq formData.category "Reading"}}selected{{/eq}}>Reading</option>
+                                <option value="Other" {{#eq formData.category "Other"}}selected{{/eq}}>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Target (Optional)</label>
+                            <input type="number" class="form-control" name="target" 
+                                   value="{{formData.target}}" min="0" 
+                                   placeholder="e.g., 100 problems, 30 days">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Unit (Optional)</label>
+                            <input type="text" class="form-control" name="unit" 
+                                   value="{{formData.unit}}" 
+                                   placeholder="e.g., problems, hours, chapters, pages">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Color Theme</label>
+                            <!-- FIXED: Use only one color input with a proper name -->
+                            <select class="form-select" name="color" id="colorSelect">
+                                <option value="#0d6efd" {{#eq formData.color "#0d6efd"}}selected{{/eq}}>Blue</option>
+                                <option value="#198754" {{#eq formData.color "#198754"}}selected{{/eq}}>Green</option>
+                                <option value="#6f42c1" {{#eq formData.color "#6f42c1"}}selected{{/eq}}>Purple</option>
+                                <option value="#fd7e14" {{#eq formData.color "#fd7e14"}}selected{{/eq}}>Orange</option>
+                                <option value="#dc3545" {{#eq formData.color "#dc3545"}}selected{{/eq}}>Red</option>
+                                <option value="#20c997" {{#eq formData.color "#20c997"}}selected{{/eq}}>Teal</option>
+                                <option value="#000000" {{#eq formData.color "#000000"}}selected{{/eq}}>Black</option>
+                                <option value="#6c757d" {{#eq formData.color "#6c757d"}}selected{{/eq}}>Gray</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" name="description" rows="3" 
+                                  placeholder="What will you track in this tracker?">{{formData.description}}</textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Icon</label>
+                        <div class="row">
+                            {{#each ['bi-check-circle', 'bi-code-slash', 'bi-book', 'bi-laptop', 'bi-briefcase', 'bi-clock', 'bi-graph-up', 'bi-lightbulb']}}
+                            <div class="col-3 col-md-2 mb-2">
+                                <input type="radio" class="btn-check" name="icon" 
+                                       value="{{this}}" id="icon-{{@index}}" 
+                                       {{#eq this ../formData.icon}}checked{{/eq}}
+                                       {{#unless ../formData.icon}}{{#eq @index 0}}checked{{/eq}}{{/unless}}>
+                                <label class="btn btn-outline-secondary w-100" for="icon-{{@index}}">
+                                    <i class="bi {{this}}"></i>
+                                </label>
+                            </div>
+                            {{/each}}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="/progress" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Create Tracker
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

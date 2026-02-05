@@ -1,0 +1,798 @@
+
+<div class="row">
+    <!-- Welcome Card -->
+    <div class="col-12 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h1 class="card-title">
+                    <i class="bi bi-emoji-smile"></i> Welcome, {{user.username}}!
+                </h1>
+                <p class="card-text">Your unified portal for college management</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Row - All cards with equal height -->
+    <div class="row row-cols-1 row-cols-md-4 g-4 mb-4">
+        <!-- Attendance Tracker Card -->
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="text-muted mb-0">Attendance Status</h6>
+                            <h3 class="mt-2">{{attendance.length}}</h3>
+                        </div>
+                        <i class="bi bi-calendar-check fs-1 text-primary"></i>
+                    </div>
+                    <div class="mb-3">
+                        <span class="badge bg-success">{{#if (gt safeSubjects 0)}}{{safeSubjects}} Safe{{/if}}</span>
+                        <span class="badge bg-warning">{{#if (gt atRiskSubjects 0)}}{{atRiskSubjects}} At
+                            Risk{{/if}}</span>
+                    </div>
+                    <a href="/attendance" class="btn btn-sm btn-outline-primary w-100">View Details</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- DSA Progress Card -->
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="text-muted mb-0">DSA Progress</h6>
+                            {{#if dsaProgress}}
+                            <h3 class="mt-2">{{dsaProgress.problemsSolved}}</h3>
+                            {{else}}
+                            <h3 class="mt-2">0</h3>
+                            {{/if}}
+                        </div>
+                        <i class="bi bi-graph-up fs-1 text-success"></i>
+                    </div>
+                    <div class="mb-3">
+                        {{#if dsaProgress}}
+                        <p class="mb-1">Problems Solved</p>
+                        <span class="badge bg-info">Streak: {{dsaProgress.streak}} days</span>
+                        {{else}}
+                        <p class="mb-1">Start your DSA journey!</p>
+                        {{/if}}
+                    </div>
+                    <a href="/progress" class="btn btn-sm btn-outline-success w-100">Track Progress</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes Manager Card -->
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="text-muted mb-0">Notes Manager</h6>
+                            {{#if notesStats}}
+                            <h3 class="mt-2">{{notesStats.totalNotes}}</h3>
+                            {{else}}
+                            <h3 class="mt-2">0</h3>
+                            {{/if}}
+                        </div>
+                        <i class="bi bi-journal-text fs-1 text-info"></i>
+                    </div>
+                    <div class="mb-3">
+                        {{#if notesStats}}
+                        <p class="mb-1">Notes Uploaded</p>
+                        <span class="badge bg-info">{{notesStats.recentUploads}} recent</span>
+                        {{else}}
+                        <p class="mb-1">Upload your notes</p>
+                        {{/if}}
+                    </div>
+                    <a href="/notes" class="btn btn-sm btn-outline-info w-100">Manage Notes</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reminders Card -->
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="text-muted mb-0">Reminders</h6>
+                            {{#if remindersStats}}
+                            <h3 class="mt-2">{{remindersStats.upcoming}}</h3>
+                            {{else}}
+                            <h3 class="mt-2">0</h3>
+                            {{/if}}
+                        </div>
+                        <i class="bi bi-alarm fs-1 text-warning"></i>
+                    </div>
+                    <div class="mb-3">
+                        {{#if remindersStats}}
+                        <p class="mb-1">Upcoming</p>
+                        <span class="badge bg-danger">{{remindersStats.overdue}} overdue</span>
+                        {{else}}
+                        <p class="mb-1">Add reminders</p>
+                        {{/if}}
+                    </div>
+                    <a href="/reminders" class="btn btn-sm btn-outline-warning w-100">View All</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick To-Do & Upcoming Deadlines Row -->
+    <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">
+        <!-- Quick To-Do Card -->
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-check2-square"></i> Quick To-Do
+                        <a href="/todos" class="float-end btn btn-sm btn-outline-primary">View All</a>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {{#if todos.length}}
+                    <ul class="list-group list-group-flush">
+                        {{#each todos}}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <input type="checkbox" class="form-check-input me-2" {{#eq status 'completed'
+                                    }}checked{{/eq}} onchange="updateTodoStatus('{{_id}}', this.checked)">
+                                <span class="{{#eq status 'completed'}}text-decoration-line-through{{/eq}}">
+                                    {{title}}
+                                </span>
+                            </div>
+                            <span class="badge bg-{{priorityColor priority}}">{{priority}}</span>
+                        </li>
+                        {{/each}}
+                    </ul>
+                    {{else}}
+                    <p class="text-muted mb-0">No tasks yet. Add your first task!</p>
+                    {{/if}}
+                </div>
+                <div class="card-footer">
+                    <form action="/todos" method="POST" class="input-group">
+                        <input type="text" name="title" class="form-control form-control-sm"
+                            placeholder="Add quick task..." required>
+                        <button type="submit" class="btn btn-primary btn-sm">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Deadlines Card -->
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-alarm"></i> Upcoming Deadlines
+                        <a href="/reminders" class="float-end btn btn-sm btn-outline-warning">View All</a>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {{#if upcomingReminders.length}}
+                    <div class="list-group list-group-flush">
+                        {{#each upcomingReminders}}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{title}}</h6>
+                                <small class="text-muted countdown" data-target="{{dueDate}}">
+                                    {{formatDate dueDate}}
+                                </small>
+                            </div>
+                            <p class="mb-1 small text-muted">{{description}}</p>
+                            <span
+                                class="badge bg-{{#eq priority 'high'}}danger{{else}}{{#eq priority 'medium'}}warning{{else}}info{{/eq}}{{/eq}}">
+                                {{priority}}
+                            </span>
+                        </div>
+                        {{/each}}
+                    </div>
+                    {{else}}
+                    <p class="text-muted mb-0">No upcoming deadlines</p>
+                    {{/if}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Row -->
+    <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">
+        <!-- Quick Notes Upload Card -->
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-journal-arrow-up"></i> Quick Notes Upload
+                        <a href="/notes" class="float-end btn btn-sm btn-outline-info">Manage</a>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form action="/notes/upload" method="POST" enctype="multipart/form-data" id="quickUploadForm">
+                        <div class="mb-3">
+                            <label for="quickSubject" class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="quickSubject" name="subject"
+                                placeholder="e.g., Mathematics" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quickFile" class="form-label">Choose File</label>
+                            <input type="file" class="form-control" id="quickFile" name="noteFile" required>
+                            <div class="form-text">PDF, Images, Docs (max 10MB)</div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-info">
+                                <i class="bi bi-upload"></i> Upload Note
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Reminder Card -->
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock"></i> Quick Reminder
+                        <a href="/reminders" class="float-end btn btn-sm btn-outline-warning">View All</a>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form action="/reminders/add" method="POST" id="quickReminderForm">
+                        <div class="mb-3">
+                            <label for="quickTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="quickTitle" name="title"
+                                placeholder="e.g., Submit Assignment" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="quickDueDate" class="form-label">Due Date</label>
+                                <input type="datetime-local" class="form-control" id="quickDueDate" name="dueDate"
+                                    required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="quickPriority" class="form-label">Priority</label>
+                                <select class="form-select" id="quickPriority" name="priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-plus-circle"></i> Add Reminder
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Alerts -->
+    {{#if lowAttendance.length}}
+    <div class="col-12 mb-4">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> Attendance Alerts
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row row-cols-1 row-cols-md-3 g-4">
+                    {{#each lowAttendance}}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6>{{subject}}</h6>
+                                <p>Attendance: {{formatPercentage percentage}}%</p>
+                                {{{progressBar percentage}}}
+                                <small class="text-danger">Below 75% threshold</small>
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-success w-100 mb-2"
+                                        onclick="markAttendance('{{_id}}', 'present')">
+                                        <i class="bi bi-check"></i> Mark Present
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger w-100"
+                                        onclick="markAttendance('{{_id}}', 'absent')">
+                                        <i class="bi bi-x"></i> Mark Absent
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+            </div>
+        </div>
+    </div>
+    {{/if}}
+
+    <!-- Recent Activity -->
+    <div class="col-12 mt-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-activity"></i> Recent Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row row-cols-1 row-cols-md-3 g-4">
+                    <div class="col">
+                        <div class="card h-100 border-0">
+                            <div class="card-body">
+                                <h6><i class="bi bi-check2-circle text-success"></i> Completed Tasks</h6>
+                                <ul class="list-unstyled">
+                                    {{#each recentCompleted}}
+                                    <li class="mb-2">
+                                        <i class="bi bi-check-circle text-success me-2"></i>
+                                        {{title}}
+                                        <small class="text-muted d-block">{{timeAgo}}</small>
+                                    </li>
+                                    {{else}}
+                                    <li class="text-muted">No recent completions</li>
+                                    {{/each}}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card h-100 border-0">
+                            <div class="card-body">
+                                <h6><i class="bi bi-upload text-info"></i> Recent Notes</h6>
+                                <ul class="list-unstyled">
+                                    {{#each recentNotes}}
+                                    <li class="mb-2">
+                                        <i class="bi bi-file-earmark-text text-info me-2"></i>
+                                        {{title}}
+                                        <small class="text-muted d-block">{{subject}}</small>
+                                    </li>
+                                    {{else}}
+                                    <li class="text-muted">No recent notes</li>
+                                    {{/each}}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card h-100 border-0">
+                            <div class="card-body">
+                                <h6><i class="bi bi-bell text-warning"></i> Upcoming</h6>
+                                <ul class="list-unstyled">
+                                    {{#each upcomingTasks}}
+                                    <li class="mb-2">
+                                        <i class="bi bi-clock text-warning me-2"></i>
+                                        {{title}}
+                                        <small class="text-muted d-block">{{dueIn}}</small>
+                                    </li>
+                                    {{else}}
+                                    <li class="text-muted">Nothing upcoming</li>
+                                    {{/each}}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-12 mt-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning"></i> Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row row-cols-2 row-cols-md-6 g-3">
+                    <div class="col">
+                        <a href="/attendance" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-calendar-plus"></i> Attendance
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a href="/notes" class="btn btn-outline-info w-100">
+                            <i class="bi bi-journal-text"></i> Notes
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a href="/reminders" class="btn btn-outline-warning w-100">
+                            <i class="bi bi-alarm"></i> Reminders
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a href="/todos" class="btn btn-outline-success w-100">
+                            <i class="bi bi-check2-square"></i> To-Do
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a href="/progress" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-graph-up"></i> Progress
+                        </a>
+                    </div>
+                    <div class="col">
+                        <button class="btn btn-outline-secondary w-100" onclick="showAllFeatures()">
+                            <i class="bi bi-grid-3x3"></i> All Features
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Notifications Widget - Add this to your dashboard layout -->
+<div class="col-lg-6 mb-4">
+    <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-0">
+                    <i class="bi bi-envelope text-primary me-2"></i>Email Alerts
+                </h6>
+                <p class="small text-muted mb-0 mt-1">Important opportunities</p>
+            </div>
+            <div>
+                <span class="badge bg-danger">{{emailUnreadCount}} unread</span>
+            </div>
+        </div>
+        <div class="card-body">
+            {{#if emailNotifications.length}}
+            <div class="list-group list-group-flush">
+                {{#each emailNotifications}}
+                <a href="/email/{{this.id}}" class="list-group-item list-group-item-action border-0 px-0 py-3">
+                    <div class="d-flex align-items-start">
+                        <div class="me-3">
+                            <div class="rounded-circle p-2 bg-{{this.categoryColor}}">
+                                <i class="bi bi-{{this.categoryIcon}} text-white"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <h6 class="mb-0 text-truncate" style="max-width: 300px;">
+                                    {{this.subject}}
+                                </h6>
+                                <small class="text-muted">
+                                    {{formatTimeAgo this.date}}
+                                </small>
+                            </div>
+                            <p class="text-muted small mb-1">
+                                <i class="bi bi-person me-1"></i>
+                                {{this.from}}
+                            </p>
+                            <div class="d-flex gap-2">
+                                <span class="badge bg-{{this.categoryColor}}">
+                                    {{this.category}}
+                                </span>
+                                <span class="badge bg-{{this.priorityColor}}">
+                                    {{this.priority}}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {{/each}}
+            </div>
+            {{else}}
+            <div class="text-center py-4">
+                <i class="bi bi-envelope display-4 text-muted mb-3"></i>
+                <h5 class="text-muted">No email alerts yet</h5>
+                <p class="text-muted small mb-3">
+                    Connect your email to get notifications for jobs, internships, and hackathons
+                </p>
+                <a href="/email/connect" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> Connect Email
+                </a>
+            </div>
+            {{/if}}
+        </div>
+        {{#if emailNotifications.length}}
+        <div class="card-footer bg-transparent">
+            <a href="/email" class="btn btn-sm btn-link text-decoration-none">
+                View All Alerts <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        {{/if}}
+    </div>
+</div>
+
+<script>
+    // DOM Ready
+    document.addEventListener('DOMContentLoaded', function () {
+        // Update countdowns
+        updateCountdowns();
+        setInterval(updateCountdowns, 60000);
+
+        // Quick upload form
+        document.getElementById('quickUploadForm').addEventListener('submit', function (e) {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Uploading...';
+        });
+
+        // Quick reminder form - set default date to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('quickDueDate').value = tomorrow.toISOString().slice(0, 16);
+
+        // Equalize card heights
+        equalizeCardHeights();
+    });
+
+    // Mark attendance
+    function markAttendance(attendanceId, action) {
+        fetch(`/attendance/update/${attendanceId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action })
+        }).then(() => window.location.reload());
+    }
+
+    // Update todo status
+    function updateTodoStatus(todoId, isChecked) {
+        const status = isChecked ? 'completed' : 'pending';
+        fetch(`/todos/${todoId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+        }).then(() => window.location.reload());
+    }
+
+    // Show all features
+    function showAllFeatures() {
+        const features = [
+            { name: 'Attendance Tracker', url: '/attendance', icon: 'bi-calendar-check', color: 'primary' },
+            { name: 'Notes Manager', url: '/notes', icon: 'bi-journal-text', color: 'info' },
+            { name: 'Reminders', url: '/reminders', icon: 'bi-alarm', color: 'warning' },
+            { name: 'To-Do List', url: '/todos', icon: 'bi-check2-square', color: 'success' },
+            { name: 'Progress Tracker', url: '/progress', icon: 'bi-graph-up', color: 'danger' }
+        ];
+
+        let modalContent = '<div class="row row-cols-1 row-cols-md-3 g-4">';
+        features.forEach(feature => {
+            modalContent += `
+            <div class="col">
+                <a href="${feature.url}" class="card text-decoration-none h-100">
+                    <div class="card-body text-center">
+                        <i class="bi ${feature.icon} display-4 text-${feature.color} mb-3"></i>
+                        <h5>${feature.name}</h5>
+                    </div>
+                </a>
+            </div>
+        `;
+        });
+        modalContent += '</div>';
+
+        // Create modal
+        const modalDiv = document.createElement('div');
+        modalDiv.className = 'modal fade';
+        modalDiv.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">All Features</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    ${modalContent}
+                </div>
+            </div>
+        </div>
+    `;
+
+        document.body.appendChild(modalDiv);
+        const modal = new bootstrap.Modal(modalDiv);
+        modal.show();
+
+        // Remove modal after close
+        modalDiv.addEventListener('hidden.bs.modal', function () {
+            document.body.removeChild(modalDiv);
+        });
+    }
+
+    // Update countdowns
+    function updateCountdowns() {
+        const countdownElements = document.querySelectorAll('.countdown');
+        countdownElements.forEach(element => {
+            const targetDate = new Date(element.dataset.target);
+            const now = new Date();
+            const diff = targetDate - now;
+
+            if (diff <= 0) {
+                element.innerHTML = 'Overdue!';
+                element.classList.add('text-danger', 'fw-bold');
+                return;
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+            if (days > 0) {
+                element.innerHTML = `${days}d ${hours}h`;
+            } else {
+                element.innerHTML = `${hours}h`;
+            }
+
+            if (days === 0) {
+                element.classList.add('text-warning', 'fw-bold');
+            }
+        });
+    }
+
+    // Equalize card heights in each row
+    function equalizeCardHeights() {
+        // Equalize stat cards
+        equalizeHeights('.row-cols-md-4 .card');
+
+        // Equalize todo and deadline cards
+        equalizeHeights('.row-cols-md-2 .card');
+
+        // Equalize quick action cards
+        equalizeHeights('.row-cols-md-2 .card');
+
+        // Equalize recent activity cards
+        equalizeHeights('.row-cols-md-3 .card');
+    }
+
+    // Helper function to equalize heights
+    function equalizeHeights(selector) {
+        const cards = document.querySelectorAll(selector);
+        let maxHeight = 0;
+
+        // Reset heights to auto first
+        cards.forEach(card => {
+            card.style.height = 'auto';
+        });
+
+        // Find max height
+        cards.forEach(card => {
+            const height = card.offsetHeight;
+            if (height > maxHeight) {
+                maxHeight = height;
+            }
+        });
+
+        // Set all cards to max height
+        cards.forEach(card => {
+            card.style.height = maxHeight + 'px';
+        });
+    }
+
+    // Re-equalize on window resize
+    window.addEventListener('resize', equalizeCardHeights);
+</script>
+
+<style>
+    /* Card styles */
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, .125);
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0, 0, 0, .125);
+    }
+
+    /* List group items */
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+        padding: 0.75rem 0;
+    }
+
+    .list-group-item:first-child {
+        border-top: none;
+    }
+
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+
+    /* Badge colors */
+    .badge.bg-primary {
+        background-color: #0d6efd !important;
+    }
+
+    .badge.bg-success {
+        background-color: #28a745 !important;
+    }
+
+    .badge.bg-info {
+        background-color: #17a2b8 !important;
+    }
+
+    .badge.bg-warning {
+        background-color: #ffc107 !important;
+        color: #212529;
+    }
+
+    .badge.bg-danger {
+        background-color: #dc3545 !important;
+    }
+
+    /* Progress bar styling */
+    .progress {
+        height: 8px;
+        margin: 8px 0;
+    }
+
+    /* Button hover effects */
+    .btn-outline-primary:hover .bi,
+    .btn-outline-success:hover .bi,
+    .btn-outline-info:hover .bi,
+    .btn-outline-warning:hover .bi,
+    .btn-outline-danger:hover .bi {
+        color: white !important;
+    }
+
+    /* Form styling */
+    .form-control,
+    .form-select {
+        border-radius: 6px;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .card {
+            margin-bottom: 1rem;
+        }
+
+        .row-cols-md-4 .col,
+        .row-cols-md-2 .col,
+        .row-cols-md-3 .col {
+            margin-bottom: 1rem;
+        }
+    }
+
+    /* Card body padding fix */
+    .card-body {
+        padding: 1.25rem;
+    }
+
+    /* Ensure equal height cards display properly */
+    .h-100 {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .h-100 .card-body {
+        flex: 1;
+    }
+
+    /* Icon sizes */
+    .fs-1 {
+        font-size: 2.5rem !important;
+    }
+
+    /* Quick actions grid */
+    .row-cols-2 .col .btn,
+    .row-cols-md-6 .col .btn {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .row-cols-2 .col .btn .bi,
+    .row-cols-md-6 .col .btn .bi {
+        display: block;
+        margin: 0 auto 0.25rem;
+        font-size: 1.2rem;
+    }
+</style>

@@ -1,0 +1,78 @@
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-upload"></i> Upload Notes
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {{#if error}}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> {{error}}
+                    </div>
+                    {{/if}}
+                    
+                    <form action="/notes/upload" method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Subject *</label>
+                            <input type="text" class="form-control" id="subject" name="subject" 
+                                   placeholder="e.g., Mathematics, Physics" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   placeholder="e.g., Chapter 1 Notes, Important Formulas" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3" placeholder="Brief description of the note..."></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="noteFile" class="form-label">Select File *</label>
+                            <input type="file" class="form-control" id="noteFile" name="noteFile" 
+                                   accept=".pdf,.jpg,.jpeg,.png,.txt,.doc,.docx,.ppt,.pptx" required>
+                            <div class="form-text">
+                                Max size: 10MB. Supported: PDF, Images, Documents
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Tags</label>
+                            <input type="text" class="form-control" id="tags" name="tags" 
+                                   placeholder="important, chapter1, formulas (comma separated)">
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-upload"></i> Upload Note
+                            </button>
+                            <a href="/notes" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Notes
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Upload Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check-circle text-success"></i> Max file size: 10MB</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Supported formats: PDF, JPG, PNG, TXT, DOC, DOCX</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Keep filenames descriptive</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Use relevant tags for easy searching</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

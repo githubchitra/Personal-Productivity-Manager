@@ -1,0 +1,322 @@
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="bi bi-calendar-check"></i> Daily Progress Tracker</h1>
+            <a href="/progress/create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create New Tracker
+            </a>
+        </div>
+        <p class="lead">Track your daily progress and build consistent habits</p>
+    </div>
+
+    <!-- Today's Quick Stats -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-sun"></i> Today's Overview
+                    <span class="badge bg-primary ms-2">{{formatDateOnly (toIST (now))}}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center p-3">
+                                <h1 class="display-6">{{stats.todayEntries}}</h1>
+                                <small>Today's Entries</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center p-3">
+                                <h1 class="display-6">{{formatNumber (divide stats.todayTime 60) 1}}</h1>
+                                <small>Today's Hours</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center p-3">
+                                <h1 class="display-6">{{stats.activeTrackers}}</h1>
+                                <small>Active Trackers</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body text-center p-3">
+                                <h1 class="display-6">{{formatNumber (divide stats.totalTimeSpent 60) 1}}</h1>
+                                <small>Total Hours</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Show today's entries from all trackers -->
+                {{#if (gt stats.todayEntries 0)}}
+                <div class="mt-4">
+                    <h6><i class="bi bi-list-check"></i> Today's Activities (IST)</h6>
+                    <div class="list-group list-group-flush">
+                        {{#each trackers}}
+                        {{#if (gt todayEntries 0)}}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{title}}</strong>
+                                    <small class="text-muted ms-2">({{todayEntries}} {{#eq todayEntries 1}}entry{{else}}entries{{/eq}} today)</small>
+                                </div>
+                                <a href="/progress/tracker/{{_id}}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                        {{/if}}
+                        {{/each}}
+                    </div>
+                </div>
+                {{/if}}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Add Today's Progress -->
+    {{#if hasTrackers}}
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pencil"></i> Quick Add - Today's Progress (IST)
+                </h5>
+            </div>
+            <div class="card-body">
+                <form action="/progress/entry/add/quick" method="POST" id="quickAddForm">
+                    <input type="hidden" name="entryDate" value="{{todayISO}}">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Tracker</label>
+                            <select class="form-select" name="trackerId" required>
+                                <option value="">Select a tracker</option>
+                                {{#each trackers}}
+                                {{#if (eq status 'active')}}
+                                <option value="{{_id}}">{{title}}</option>
+                                {{/if}}
+                                {{/each}}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">What did you do?</label>
+                            <input type="text" class="form-control" name="description"
+                                placeholder="e.g., Solved 5 problems, Studied chapter 3" required>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label">Time (minutes)</label>
+                            <input type="number" class="form-control" name="timeSpent" min="0" placeholder="e.g., 60">
+                        </div>
+                        <div class="col-md-2 mb-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-check-circle"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {{/if}}
+
+    <!-- Your Trackers -->
+    {{#if hasTrackers}}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Your Progress Trackers</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {{#each trackers}}
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 border-start border-5" style="border-left-color: {{color}} !important;">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h5 class="card-title mb-1">
+                                            <i class="bi {{icon}}"></i> {{title}}
+                                        </h5>
+                                        <p class="text-muted small mb-0">
+                                            {{category}} •
+                                            <span class="badge bg-{{#eq status 'active'}}success{{else}}{{#eq status 'completed'}}primary{{else}}secondary{{/eq}}{{/eq}}">
+                                                {{status}}
+                                            </span>
+                                        </p>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button"
+                                            data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="/progress/tracker/{{_id}}">
+                                                    <i class="bi bi-eye"></i> View
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="/progress/edit/{{_id}}">
+                                                    <i class="bi bi-pencil"></i> Edit
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <hr class="dropdown-divider">
+                                            </li>
+                                            <li>
+                                                <form action="/progress/delete/{{_id}}" method="POST"
+                                                    onsubmit="return confirm('Delete this tracker?')">
+                                                    <button type="submit" class="dropdown-item text-danger">
+                                                        <i class="bi bi-trash"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {{#if description}}
+                                <p class="card-text small text-muted mb-3">{{description}}</p>
+                                {{/if}}
+
+                                <!-- Progress Stats -->
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small class="text-muted">Total Entries</small>
+                                        <small class="text-muted">{{dailyEntries.length}}</small>
+                                    </div>
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar" style="width: {{#if target}}{{percentage (dailyEntries.length) target}}{{else}}0{{/if}}%">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Last Entry in IST -->
+                                {{#if dailyEntries.length}}
+                                {{#with (getLastEntryIST dailyEntries)}}
+                                <div class="border-top pt-3">
+                                    <small class="text-muted">Last Entry:</small>
+                                    <p class="mb-1 small">{{description}}</p>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock"></i> {{timeAgo date}}
+                                        {{#if timeSpent}}
+                                        • {{timeSpent}} min
+                                        {{/if}}
+                                    </small>
+                                </div>
+                                {{/with}}
+                                {{/if}}
+
+                                <!-- Streak -->
+                                {{#if streak}}
+                                <div class="mt-3">
+                                    <span class="badge bg-warning">
+                                        <i class="bi bi-fire"></i> {{streak}} day streak
+                                    </span>
+                                </div>
+                                {{/if}}
+
+                                <!-- Actions -->
+                                <div class="mt-3">
+                                    <a href="/progress/tracker/{{_id}}" class="btn btn-sm btn-outline-primary w-100">
+                                        <i class="bi bi-plus-circle"></i> Add Today's Progress
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+            </div>
+        </div>
+    </div>
+    {{else}}
+    <!-- Empty State -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-calendar-plus display-1 text-muted mb-3"></i>
+                <h3>Start Tracking Your Progress</h3>
+                <p class="text-muted mb-4">Create your first tracker to monitor your daily learning and activities</p>
+                <a href="/progress/create" class="btn btn-primary btn-lg">
+                    <i class="bi bi-plus-circle"></i> Create Your First Tracker
+                </a>
+
+                <!-- Example Trackers -->
+                <div class="mt-5">
+                    <h5>Popular Trackers:</h5>
+                    <div class="row mt-3 justify-content-center">
+                        <div class="col-md-3 col-6 mb-2">
+                            <div class="card border">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-code-slash h3 text-primary"></i>
+                                    <p class="mb-0 small">DSA Practice</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <div class="card border">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-book h3 text-success"></i>
+                                    <p class="mb-0 small">Study Hours</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <div class="card border">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-briefcase h3 text-info"></i>
+                                    <p class="mb-0 small">Project Work</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{/if}}
+</div>
+
+<!-- Quick Add Form Handler -->
+<script>
+    document.getElementById('quickAddForm')?.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const trackerId = formData.get('trackerId');
+        const description = formData.get('description');
+        const timeSpent = formData.get('timeSpent');
+        const entryDate = formData.get('entryDate');
+
+        try {
+            const response = await fetch(`/progress/entry/add/${trackerId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    description,
+                    timeSpent: timeSpent || 0,
+                    entryDate
+                })
+            });
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Failed to add entry');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error adding entry');
+        }
+    });
+</script>

@@ -1,0 +1,1026 @@
+{{! views/todos/index.hbs }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - College Helper</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
+    <!-- Tagify CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css">
+    
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --light-color: #f8f9fc;
+            --dark-color: #5a5c69;
+        }
+        
+        .todo-card {
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+        
+        .todo-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .todo-card.priority-high { border-left-color: var(--danger-color); }
+        .todo-card.priority-medium { border-left-color: var(--warning-color); }
+        .todo-card.priority-low { border-left-color: var(--success-color); }
+        
+        .todo-card.completed {
+            opacity: 0.7;
+            background-color: var(--light-color);
+        }
+        
+        .todo-card.overdue {
+            background-color: rgba(231, 74, 59, 0.05);
+        }
+        
+        .todo-card.today {
+            background-color: rgba(246, 194, 62, 0.05);
+        }
+        
+        .stats-card {
+            border-radius: 10px;
+            transition: transform 0.3s;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .subtask-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .subtask-item:last-child {
+            border-bottom: none;
+        }
+        
+        .priority-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        
+        .category-badge {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        
+        .action-buttons .btn {
+            padding: 2px 8px;
+            font-size: 0.875rem;
+        }
+        
+        .progress-thin {
+            height: 6px;
+            border-radius: 3px;
+        }
+        
+        .task-title {
+            font-weight: 500;
+            line-height: 1.4;
+        }
+        
+        .due-date {
+            font-size: 0.875rem;
+        }
+        
+        .due-date.overdue {
+            color: var(--danger-color);
+            font-weight: 500;
+        }
+        
+        .due-date.today {
+            color: var(--warning-color);
+            font-weight: 500;
+        }
+        
+        .checkbox-lg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .bulk-select {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body> 
+    
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Sidebar Filters -->
+            <div class="col-lg-3 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-funnel me-2"></i>Filters
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Status Filter -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-list-check me-1"></i>Status
+                            </h6>
+                            <div class="btn-group-vertical w-100" role="group">
+                                <a href="/todos?filter=all" 
+                                   class="btn btn-outline-secondary text-start {{#if (eq filters.current 'all')}}active{{/if}}">
+                                    <i class="bi bi-grid me-2"></i>All Tasks
+                                    <span class="badge bg-secondary float-end">{{counts.all}}</span>
+                                </a>
+                                <a href="/todos?filter=pending" 
+                                   class="btn btn-outline-warning text-start {{#if (eq filters.current 'pending')}}active{{/if}}">
+                                    <i class="bi bi-clock me-2"></i>Pending
+                                    <span class="badge bg-warning float-end">{{counts.pending}}</span>
+                                </a>
+                                <a href="/todos?filter=in-progress" 
+                                   class="btn btn-outline-info text-start {{#if (eq filters.current 'in-progress')}}active{{/if}}">
+                                    <i class="bi bi-arrow-repeat me-2"></i>In Progress
+                                    <span class="badge bg-info float-end">{{counts.in-progress}}</span>
+                                </a>
+                                <a href="/todos?filter=completed" 
+                                   class="btn btn-outline-success text-start {{#if (eq filters.current 'completed')}}active{{/if}}">
+                                    <i class="bi bi-check2-circle me-2"></i>Completed
+                                    <span class="badge bg-success float-end">{{counts.completed}}</span>
+                                </a>
+                                <a href="/todos?filter=today" 
+                                   class="btn btn-outline-danger text-start {{#if (eq filters.current 'today')}}active{{/if}}">
+                                    <i class="bi bi-calendar-day me-2"></i>Due Today
+                                    <span class="badge bg-danger float-end">{{counts.today}}</span>
+                                </a>
+                                <a href="/todos?filter=overdue" 
+                                   class="btn btn-outline-dark text-start {{#if (eq filters.current 'overdue')}}active{{/if}}">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>Overdue
+                                    <span class="badge bg-dark float-end">{{counts.overdue}}</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Priority Filter -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-flag me-1"></i>Priority
+                            </h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="/todos?filter={{filters.current}}&priority=high" 
+                                   class="btn btn-sm btn-outline-danger {{#if (eq filters.priority 'high')}}active{{/if}}">
+                                    High
+                                </a>
+                                <a href="/todos?filter={{filters.current}}&priority=medium" 
+                                   class="btn btn-sm btn-outline-warning {{#if (eq filters.priority 'medium')}}active{{/if}}">
+                                    Medium
+                                </a>
+                                <a href="/todos?filter={{filters.current}}&priority=low" 
+                                   class="btn btn-sm btn-outline-success {{#if (eq filters.priority 'low')}}active{{/if}}">
+                                    Low
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Category Filter -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-tag me-1"></i>Category
+                            </h6>
+                            <select class="form-select" onchange="window.location.href='/todos?filter={{filters.current}}&category='+this.value">
+                                <option value="all">All Categories</option>
+                                {{#each categories}}
+                                <option value="{{this}}" {{#if (eq this ../filters.category)}}selected{{/if}}>
+                                    {{this}}
+                                </option>
+                                {{/each}}
+                            </select>
+                        </div>
+                        
+                        <!-- Sort Options -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-sort-down me-1"></i>Sort By
+                            </h6>
+                            <select class="form-select" onchange="window.location.href='/todos?filter={{filters.current}}&sort='+this.value">
+                                <option value="dueDate" {{#if (eq filters.sort 'dueDate')}}selected{{/if}}>Due Date</option>
+                                <option value="priority" {{#if (eq filters.sort 'priority')}}selected{{/if}}>Priority</option>
+                                <option value="created" {{#if (eq filters.sort 'created')}}selected{{/if}}>Created Date</option>
+                                <option value="updated" {{#if (eq filters.sort 'updated')}}selected{{/if}}>Updated Date</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-lightning me-1"></i>Quick Actions
+                            </h6>
+                            <div class="d-grid gap-2">
+                                <a href="/todos/new" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle me-1"></i>New Task
+                                </a>
+                                <button class="btn btn-outline-secondary" onclick="clearCompleted()">
+                                    <i class="bi bi-trash me-1"></i>Clear Completed
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="bi bi-check2-square text-primary me-2"></i>Todo Manager
+                        </h2>
+                        <p class="text-muted mb-0">
+                            {{#if filters.search}}
+                            Showing results for "{{filters.search}}"
+                            {{else}}
+                            Manage all your tasks in one place
+                            {{/if}}
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <!-- Search -->
+                        <form class="d-flex me-3" action="/todos" method="GET">
+                            <input type="hidden" name="filter" value="{{filters.current}}">
+                            <input type="hidden" name="sort" value="{{filters.sort}}">
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="search" 
+                                       placeholder="Search tasks..."
+                                       value="{{filters.search}}">
+                                <button class="btn btn-outline-secondary" type="submit">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <!-- Bulk Actions -->
+                        <div class="dropdown me-2">
+                            <button class="btn btn-outline-secondary dropdown-toggle" 
+                                    type="button" 
+                                    data-bs-toggle="dropdown">
+                                <i class="bi bi-check2-all"></i> Bulk Actions
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="bulkComplete()">
+                                    <i class="bi bi-check2 text-success me-2"></i>Mark as Complete
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="bulkDelete()">
+                                    <i class="bi bi-trash text-danger me-2"></i>Delete Selected
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card stats-card border-start border-primary shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="text-muted">Total Tasks</h6>
+                                        <h3 class="mb-0">{{counts.all}}</h3>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-list-task text-primary fs-2"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card stats-card border-start border-warning shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="text-muted">Pending</h6>
+                                        <h3 class="mb-0">{{counts.pending}}</h3>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-clock text-warning fs-2"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card stats-card border-start border-danger shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="text-muted">Due Today</h6>
+                                        <h3 class="mb-0">{{counts.today}}</h3>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-calendar-day text-danger fs-2"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card stats-card border-start border-success shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="text-muted">Completed</h6>
+                                        <h3 class="mb-0">{{counts.completed}}</h3>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-check2-circle text-success fs-2"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Todo List -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        {{#if todos.length}}
+                        <!-- Bulk Select Header -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input bulk-select" 
+                                       type="checkbox" 
+                                       id="selectAll">
+                                <label class="form-check-label text-muted" for="selectAll">
+                                    Select All
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Todo Items -->
+                        <div id="todoList">
+                            {{#each todos}}
+                            <div class="todo-card card p-3 mb-3 priority-{{this.priority}} {{#if (eq this.status 'completed')}}completed{{/if}} {{#if this.isOverdue}}overdue{{/if}} {{#if this.isToday}}today{{/if}}">
+                                <div class="row align-items-center">
+                                    <!-- Checkbox -->
+                                    <div class="col-auto">
+                                        <div class="form-check">
+                                            <input class="form-check-input bulk-select todo-checkbox" 
+                                                   type="checkbox" 
+                                                   value="{{this._id}}"
+                                                   {{#if (eq this.status 'completed')}}checked{{/if}}
+                                                   onchange="updateStatus('{{this._id}}', this.checked)">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Task Details -->
+                                    <div class="col">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="task-title mb-1 {{#if (eq this.status 'completed')}}text-decoration-line-through text-muted{{/if}}">
+                                                    {{this.title}}
+                                                    {{#if this.description}}
+                                                    <i class="bi bi-card-text text-muted ms-1" 
+                                                       data-bs-toggle="tooltip" 
+                                                       title="{{this.description}}"></i>
+                                                    {{/if}}
+                                                </h6>
+                                                
+                                                <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                                                    <!-- Status Badge -->
+                                                    <span class="status-badge bg-{{this.statusColor}}">
+                                                        <i class="bi bi-circle-fill me-1"></i>
+                                                        {{this.status}}
+                                                    </span>
+                                                    
+                                                    <!-- Priority Badge -->
+                                                    <span class="priority-badge bg-{{this.priorityColor}} text-white">
+                                                        <i class="bi bi-flag me-1"></i>
+                                                        {{this.priority}}
+                                                    </span>
+                                                    
+                                                    <!-- Category Badge -->
+                                                    {{#if this.category}}
+                                                    <span class="category-badge">
+                                                        <i class="bi bi-tag me-1"></i>
+                                                        {{this.category}}
+                                                    </span>
+                                                    {{/if}}
+                                                    
+                                                    <!-- Due Date -->
+                                                    {{#if this.formattedDueDate}}
+                                                    <span class="due-date {{#if this.isOverdue}}overdue{{else if this.isToday}}today{{/if}}">
+                                                        <i class="bi bi-calendar me-1"></i>
+                                                        {{this.formattedDueDate}}
+                                                        {{#if this.isOverdue}}
+                                                        <span class="badge bg-danger ms-1">Overdue</span>
+                                                        {{else if this.isToday}}
+                                                        <span class="badge bg-warning ms-1">Today</span>
+                                                        {{else if this.daysUntilDue}}
+                                                        <span class="text-muted">(in {{this.daysUntilDue}} days)</span>
+                                                        {{/if}}
+                                                    </span>
+                                                    {{/if}}
+                                                    
+                                                    <!-- Tags -->
+                                                    {{#if this.tags.length}}
+                                                    <div class="d-inline">
+                                                        {{#each this.tags}}
+                                                        <span class="badge bg-light text-dark border me-1">
+                                                            #{{this}}
+                                                        </span>
+                                                        {{/each}}
+                                                    </div>
+                                                    {{/if}}
+                                                </div>
+                                                
+                                                <!-- Subtasks Progress -->
+                                                {{#if this.subtasks.length}}
+                                                <div class="mt-3">
+                                                    <div class="d-flex justify-content-between small mb-1">
+                                                        <span>Subtasks</span>
+                                                        <span>{{this.completionPercentage}}%</span>
+                                                    </div>
+                                                    <div class="progress progress-thin">
+                                                        <div class="progress-bar bg-success" 
+                                                             style="width: {{this.completionPercentage}}%">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {{/if}}
+                                            </div>
+                                            
+                                            <!-- Action Buttons -->
+                                            <div class="action-buttons">
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="/todos/edit/{{this._id}}" 
+                                                       class="btn btn-outline-secondary"
+                                                       data-bs-toggle="tooltip"
+                                                       title="Edit">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <button class="btn btn-outline-danger" 
+                                                            onclick="deleteTodo('{{this._id}}')"
+                                                            data-bs-toggle="tooltip"
+                                                            title="Delete">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{/each}}
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {{#if (gt filters.totalPages 1)}}
+                        <nav class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item {{#unless filters.hasPrevPage}}disabled{{/unless}}">
+                                    <a class="page-link" 
+                                       href="/todos?page={{filters.prevPage}}&filter={{filters.current}}&sort={{filters.sort}}&search={{filters.search}}">
+                                        Previous
+                                    </a>
+                                </li>
+                                
+                                {{#each (range 1 filters.totalPages)}}
+                                <li class="page-item {{#if (eq this ../filters.page)}}active{{/if}}">
+                                    <a class="page-link" 
+                                       href="/todos?page={{this}}&filter={{../filters.current}}&sort={{../filters.sort}}&search={{../filters.search}}">
+                                        {{this}}
+                                    </a>
+                                </li>
+                                {{/each}}
+                                
+                                <li class="page-item {{#unless filters.hasNextPage}}disabled{{/unless}}">
+                                    <a class="page-link" 
+                                       href="/todos?page={{filters.nextPage}}&filter={{filters.current}}&sort={{filters.sort}}&search={{filters.search}}">
+                                        Next
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                        {{/if}}
+                        
+                        {{else}}
+                        <!-- Empty State -->
+                        <div class="empty-state">
+                            <i class="bi bi-check2-all"></i>
+                            <h4 class="mt-3 mb-2">No tasks found</h4>
+                            <p class="text-muted mb-4">
+                                {{#if filters.search}}
+                                No tasks match your search. Try a different keyword.
+                                {{else}}
+                                {{#if (eq filters.current 'all')}}
+                                You don't have any tasks yet. Create your first task!
+                                {{else}}
+                                No {{filters.current}} tasks found.
+                                {{/if}}
+                                {{/if}}
+                            </p>
+                            <a href="/todos/new" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i>Create New Task
+                            </a>
+                        </div>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Task Modal -->
+    <div class="modal fade" id="createTodoModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-plus-circle me-2"></i>Create New Task
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="createTodoForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Task Title *</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="title" 
+                                   placeholder="What needs to be done?" 
+                                   required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" 
+                                      name="description" 
+                                      rows="3" 
+                                      placeholder="Add more details about this task..."></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Due Date</label>
+                                <input type="datetime-local" 
+                                       class="form-control" 
+                                       name="dueDate">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Priority</label>
+                                <select class="form-select" name="priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Category</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="category" 
+                                       placeholder="e.g., Study, Work, Personal">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tags</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="tags" 
+                                       placeholder="Add tags separated by commas">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Task</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        // Initialize tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Initialize flatpickr for date inputs
+            flatpickr("input[type='datetime-local']", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                minDate: "today"
+            });
+            
+            // Initialize tagify for tags input
+            var input = document.querySelector('input[name="tags"]');
+            if (input) {
+                new Tagify(input);
+            }
+        });
+        
+        // Update todo status
+        async function updateStatus(todoId, isCompleted) {
+            try {
+                const response = await fetch(`/todos/api/${todoId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        status: isCompleted ? 'completed' : 'pending'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: result.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: result.message
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to update task status'
+                });
+            }
+        }
+        
+        // Delete todo
+        async function deleteTodo(todoId) {
+            const result = await Swal.fire({
+                title: 'Are you sure?',
+                text: "This task will be deleted permanently!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            });
+            
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/todos/api/${todoId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: data.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message
+                        });
+                    }
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to delete task'
+                    });
+                }
+            }
+        }
+        
+        // Clear completed todos
+        async function clearCompleted() {
+            const result = await Swal.fire({
+                title: 'Clear Completed Tasks?',
+                text: "All completed tasks will be permanently deleted!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, clear all!'
+            });
+            
+            if (result.isConfirmed) {
+                try {
+                    // Get all completed todo IDs
+                    const response = await fetch('/todos/api/stats');
+                    const data = await response.json();
+                    
+                    if (data.success && data.stats.completed > 0) {
+                        const todoIds = [];
+                        document.querySelectorAll('.todo-card.completed .todo-checkbox').forEach(checkbox => {
+                            todoIds.push(checkbox.value);
+                        });
+                        
+                        const deleteResponse = await fetch('/todos/api/bulk', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                action: 'delete',
+                                todoIds: todoIds
+                            })
+                        });
+                        
+                        const deleteData = await deleteResponse.json();
+                        
+                        if (deleteData.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Cleared!',
+                                text: `Cleared ${deleteData.count} completed tasks`,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        }
+                    } else {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'No Completed Tasks',
+                            text: 'There are no completed tasks to clear.'
+                        });
+                    }
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to clear completed tasks'
+                    });
+                }
+            }
+        }
+        
+        // Bulk actions
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.bulk-select.todo-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+        
+        async function bulkComplete() {
+            const selectedIds = getSelectedTodoIds();
+            if (selectedIds.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Selection',
+                    text: 'Please select tasks to mark as complete.'
+                });
+                return;
+            }
+            
+            try {
+                const response = await fetch('/todos/api/bulk', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'complete',
+                        todoIds: selectedIds
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: `Marked ${data.count} tasks as complete`,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to complete selected tasks'
+                });
+            }
+        }
+        
+        async function bulkDelete() {
+            const selectedIds = getSelectedTodoIds();
+            if (selectedIds.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Selection',
+                    text: 'Please select tasks to delete.'
+                });
+                return;
+            }
+            
+            const result = await Swal.fire({
+                title: 'Delete Selected Tasks?',
+                text: `${selectedIds.length} tasks will be permanently deleted!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete them!'
+            });
+            
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch('/todos/api/bulk', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'delete',
+                            todoIds: selectedIds
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: `Deleted ${data.count} tasks`,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    }
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to delete selected tasks'
+                    });
+                }
+            }
+        }
+        
+        function getSelectedTodoIds() {
+            const ids = [];
+            document.querySelectorAll('.bulk-select.todo-checkbox:checked').forEach(checkbox => {
+                ids.push(checkbox.value);
+            });
+            return ids;
+        }
+        
+        // Create todo form
+        document.getElementById('createTodoForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            try {
+                const response = await fetch('/todos/api', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: result.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: result.message
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to create task'
+                });
+            }
+        });
+        
+        // Helper functions for Handlebars
+        Handlebars.registerHelper('eq', function(a, b) {
+            return a === b;
+        });
+        
+        Handlebars.registerHelper('gt', function(a, b) {
+            return a > b;
+        });
+        
+        Handlebars.registerHelper('range', function(start, end) {
+            const result = [];
+            for (let i = start; i <= end; i++) {
+                result.push(i);
+            }
+            return result;
+        });
+    </script>
+</body>
+</html>

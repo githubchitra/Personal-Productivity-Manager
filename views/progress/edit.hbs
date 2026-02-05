@@ -1,0 +1,188 @@
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pencil"></i> Edit Tracker: {{tracker.title}}
+                </h5>
+            </div>
+            <div class="card-body">
+                {{#if error}}
+                <div class="alert alert-danger">
+                    {{error}}
+                </div>
+                {{/if}}
+                
+                <form action="/progress/edit/{{tracker._id}}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Tracker Name *</label>
+                        <input type="text" class="form-control" name="title" 
+                               value="{{tracker.title}}" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" name="category">
+                                <option value="Study" {{#eq tracker.category "Study"}}selected{{/eq}}>Study</option>
+                                <option value="Practice" {{#eq tracker.category "Practice"}}selected{{/eq}}>Practice</option>
+                                <option value="Project" {{#eq tracker.category "Project"}}selected{{/eq}}>Project</option>
+                                <option value="Fitness" {{#eq tracker.category "Fitness"}}selected{{/eq}}>Fitness</option>
+                                <option value="Reading" {{#eq tracker.category "Reading"}}selected{{/eq}}>Reading</option>
+                                <option value="Other" {{#eq tracker.category "Other"}}selected{{/eq}}>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="active" {{#eq tracker.status "active"}}selected{{/eq}}>Active</option>
+                                <option value="completed" {{#eq tracker.status "completed"}}selected{{/eq}}>Completed</option>
+                                <option value="paused" {{#eq tracker.status "paused"}}selected{{/eq}}>Paused</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Target (Optional)</label>
+                            <input type="number" class="form-control" name="target" 
+                                   value="{{tracker.target}}" min="0" 
+                                   placeholder="e.g., 100 problems, 30 days">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Unit (Optional)</label>
+                            <input type="text" class="form-control" name="unit" 
+                                   value="{{tracker.unit}}" 
+                                   placeholder="e.g., problems, hours, chapters">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Color Theme</label>
+                            <select class="form-select" name="color" id="colorSelect">
+                                <option value="#0d6efd" {{#eq tracker.color "#0d6efd"}}selected{{/eq}}>Blue</option>
+                                <option value="#198754" {{#eq tracker.color "#198754"}}selected{{/eq}}>Green</option>
+                                <option value="#6f42c1" {{#eq tracker.color "#6f42c1"}}selected{{/eq}}>Purple</option>
+                                <option value="#fd7e14" {{#eq tracker.color "#fd7e14"}}selected{{/eq}}>Orange</option>
+                                <option value="#dc3545" {{#eq tracker.color "#dc3545"}}selected{{/eq}}>Red</option>
+                                <option value="#20c997" {{#eq tracker.color "#20c997"}}selected{{/eq}}>Teal</option>
+                                <option value="#000000" {{#eq tracker.color "#000000"}}selected{{/eq}}>Black</option>
+                                <option value="#6c757d" {{#eq tracker.color "#6c757d"}}selected{{/eq}}>Gray</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Icon</label>
+                            <select class="form-select" name="icon" id="iconSelect">
+                                <option value="bi-check-circle" {{#eq tracker.icon "bi-check-circle"}}selected{{/eq}}>Check Circle</option>
+                                <option value="bi-code-slash" {{#eq tracker.icon "bi-code-slash"}}selected{{/eq}}>Code</option>
+                                <option value="bi-book" {{#eq tracker.icon "bi-book"}}selected{{/eq}}>Book</option>
+                                <option value="bi-laptop" {{#eq tracker.icon "bi-laptop"}}selected{{/eq}}>Laptop</option>
+                                <option value="bi-briefcase" {{#eq tracker.icon "bi-briefcase"}}selected{{/eq}}>Briefcase</option>
+                                <option value="bi-clock" {{#eq tracker.icon "bi-clock"}}selected{{/eq}}>Clock</option>
+                                <option value="bi-graph-up" {{#eq tracker.icon "bi-graph-up"}}selected{{/eq}}>Graph</option>
+                                <option value="bi-lightbulb" {{#eq tracker.icon "bi-lightbulb"}}selected{{/eq}}>Lightbulb</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" name="description" rows="3">{{tracker.description}}</textarea>
+                    </div>
+                    
+                    <!-- Tracker Stats -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Tracker Statistics</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <h5 class="mb-0">{{tracker.dailyEntries.length}}</h5>
+                                    <small class="text-muted">Total Entries</small>
+                                </div>
+                                <div class="col-4">
+                                    <h5 class="mb-0">{{tracker.streak}}</h5>
+                                    <small class="text-muted">Day Streak</small>
+                                </div>
+                                <div class="col-4">
+                                    <h5 class="mb-0">{{formatDateOnly tracker.lastUpdated}}</h5>
+                                    <small class="text-muted">Last Updated</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="/progress/tracker/{{tracker._id}}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <div>
+                            <a href="/progress/tracker/{{tracker._id}}" class="btn btn-outline-primary me-2">
+                                <i class="bi bi-eye"></i> View Tracker
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Update Tracker
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- Danger Zone -->
+                <div class="mt-5 pt-4 border-top">
+                    <h6 class="text-danger mb-3">
+                        <i class="bi bi-exclamation-triangle"></i> Danger Zone
+                    </h6>
+                    
+                    <div class="card border-danger">
+                        <div class="card-body">
+                            <h6 class="card-title text-danger">Delete This Tracker</h6>
+                            <p class="card-text small text-muted">
+                                This will permanently delete the tracker and all {{tracker.dailyEntries.length}} entries.
+                                This action cannot be undone.
+                            </p>
+                            <form action="/progress/delete/{{tracker._id}}" method="POST" 
+                                  onsubmit="return confirm('Are you sure you want to delete this tracker and all its entries? This cannot be undone.')">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash"></i> Delete Tracker
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const colorSelect = document.getElementById('colorSelect');
+    const iconSelect = document.getElementById('iconSelect');
+    
+    // Update preview when selections change
+    function updatePreview() {
+        const selectedColor = colorSelect.value;
+        const selectedIcon = iconSelect.value;
+        
+        // Update card border preview
+        const card = document.querySelector('.card');
+        card.style.borderLeft = `4px solid ${selectedColor}`;
+        
+        // Update icon preview in header
+        const headerIcon = document.querySelector('.card-header i.bi-pencil').previousElementSibling;
+        if (headerIcon) {
+            headerIcon.className = `bi ${selectedIcon}`;
+            headerIcon.style.color = selectedColor;
+        }
+    }
+    
+    colorSelect.addEventListener('change', updatePreview);
+    iconSelect.addEventListener('change', updatePreview);
+    
+    // Initial preview
+    updatePreview();
+});
+</script>

@@ -1,0 +1,599 @@
+{{! views/email/index.hbs }}
+{{! Add near the top of the page }}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        {{#if hasGmailConnection}}
+            <span class="badge bg-success">
+                <i class="bi bi-check-circle"></i> Gmail Connected
+            </span>
+        {{else}}
+            <span class="badge bg-warning">
+                <i class="bi bi-exclamation-triangle"></i> Not Connected
+            </span>
+        {{/if}}
+    </div>
+    
+    <div>
+        {{#if hasGmailConnection}}
+            <button id="syncEmails" class="btn btn-primary btn-sm me-2">
+                <i class="bi bi-arrow-clockwise"></i> Sync Now
+            </button>
+            <button id="disconnectGmail" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-plug"></i> Disconnect
+            </button>
+        {{else}}
+            <a href="/email/connect" class="btn btn-success btn-sm">
+                <i class="bi bi-plug"></i> Connect Gmail
+            </a>
+        {{/if}}
+    </div>
+</div>
+
+
+
+
+
+
+
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-envelope me-2"></i>Email Filters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Categories -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-tags me-1"></i>Categories
+                        </h6>
+                        <div class="list-group list-group-flush">
+                            <a href="/email?category=all" 
+                               class="list-group-item list-group-item-action d-flex justify-content-between {{#if (eq filters.category 'all')}}active{{/if}}">
+                                All Emails
+                                <span class="badge bg-secondary">{{stats.total}}</span>
+                            </a>
+                            <a href="/email?category=job" 
+                               class="list-group-item list-group-item-action d-flex justify-content-between {{#if (eq filters.category 'job')}}active{{/if}}">
+                                <i class="bi bi-briefcase me-2"></i>Jobs
+                                <span class="badge bg-primary">{{stats.byCategory.job}}</span>
+                            </a>
+                            <a href="/email?category=internship" 
+                               class="list-group-item list-group-item-action d-flex justify-content-between {{#if (eq filters.category 'internship')}}active{{/if}}">
+                                <i class="bi bi-person-workspace me-2"></i>Internships
+                                <span class="badge bg-info">{{stats.byCategory.internship}}</span>
+                            </a>
+                            <a href="/email?category=hackathon" 
+                               class="list-group-item list-group-item-action d-flex justify-content-between {{#if (eq filters.category 'hackathon')}}active{{/if}}">
+                                <i class="bi bi-code-slash me-2"></i>Hackathons
+                                <span class="badge bg-success">{{stats.byCategory.hackathon}}</span>
+                            </a>
+                            <a href="/email?category=college" 
+                               class="list-group-item list-group-item-action d-flex justify-content-between {{#if (eq filters.category 'college')}}active{{/if}}">
+                                <i class="bi bi-building me-2"></i>College
+                                <span class="badge bg-warning">{{stats.byCategory.college}}</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-lightning me-1"></i>Quick Actions
+                        </h6>
+                        <div class="d-grid gap-2">
+                            <a href="/email/connect" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i>Add Email Account
+                            </a>
+                            <button class="btn btn-outline-secondary" onclick="manualSync()">
+                                <i class="bi bi-arrow-repeat me-1"></i>Sync Now
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div class="mt-4">
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-bar-chart me-1"></i>Statistics
+                        </h6>
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item d-flex justify-content-between">
+                                <span>Unread</span>
+                                <span class="badge bg-danger">{{stats.unread}}</span>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between">
+                                <span>Today's Important</span>
+                                <span class="badge bg-warning">{{stats.todayImportant}}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <!-- Header with Bulk Actions -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-bell text-primary me-2"></i>Email Notifications
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Important emails from jobs, internships, hackathons, and college
+                    </p>
+                </div>
+                <div class="d-flex align-items-center">
+                    <!-- Bulk Actions -->
+                    <div class="me-3" id="bulkActions" style="display: none;">
+                        <button class="btn btn-danger btn-sm me-2" onclick="deleteSelected()">
+                            <i class="bi bi-trash"></i> Delete Selected (<span id="selectedCount">0</span>)
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">
+                            Clear Selection
+                        </button>
+                    </div>
+                    
+                    <!-- Sync Status -->
+                    <div class="me-3">
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle me-1"></i>Auto-sync Active
+                        </span>
+                    </div>
+                    <!-- Unread Filter -->
+                    <div class="form-check form-switch me-3">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               id="unreadFilter"
+                               {{#if filters.unread}}checked{{/if}}
+                               onchange="toggleUnreadFilter()">
+                        <label class="form-check-label" for="unreadFilter">
+                            Unread Only
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bulk Selection Controls -->
+            <div class="d-flex align-items-center mb-3 p-3 bg-light rounded">
+                <div class="form-check me-3">
+                    <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
+                    <label class="form-check-label" for="selectAllCheckbox">
+                        <strong>Select All</strong>
+                    </label>
+                </div>
+                <small class="text-muted">Select emails to perform bulk actions</small>
+            </div>
+            
+            {{#if notifications.length}}
+            <!-- Email List with Checkboxes -->
+            <form id="bulkActionForm" action="/email/bulk-delete" method="POST">
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {{#each notifications}}
+                            <div class="list-group-item list-group-item-action border-0 p-4 {{#unless this.isRead}}bg-light{{/unless}}">
+                                <div class="d-flex align-items-start">
+                                    <!-- Checkbox for Bulk Selection -->
+                                    <div class="me-3">
+                                        <input type="checkbox" 
+                                               class="form-check-input email-checkbox" 
+                                               name="emailIds[]" 
+                                               value="{{this.emailId}}"
+                                               data-email-id="{{this.emailId}}"
+                                               onchange="updateBulkActions()">
+                                    </div>
+                                    
+                                    <!-- Category Icon -->
+                                    <div class="me-3">
+                                        <div class="rounded-circle p-2 bg-{{this.categoryColor}}">
+                                            <i class="bi bi-{{this.categoryIcon}} text-white"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Email Details -->
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <div>
+                                                <a href="/email/{{this._id}}" class="text-decoration-none">
+                                                    <h6 class="mb-0 {{#unless this.isRead}}fw-bold{{/unless}}">
+                                                        {{this.subject}}
+                                                        {{#unless this.isRead}}
+                                                        <span class="badge bg-danger ms-2">New</span>
+                                                        {{/unless}}
+                                                    </h6>
+                                                </a>
+                                                <p class="text-muted small mb-0">
+                                                    <i class="bi bi-person me-1"></i>
+                                                    {{this.from.name}} &lt;{{this.from.email}}&gt;
+                                                </p>
+                                            </div>
+                                            <div class="text-end">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-clock me-1"></i>
+                                                    {{formatDate this.date}}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        
+                                        <p class="text-muted mb-2">
+                                            {{this.snippet}}...
+                                        </p>
+                                        
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <!-- Category Badge -->
+                                            <span class="badge bg-{{this.categoryColor}}">
+                                                <i class="bi bi-{{this.categoryIcon}} me-1"></i>
+                                                {{this.category}}
+                                            </span>
+                                            
+                                            <!-- Priority Badge -->
+                                            <span class="badge bg-{{this.priorityColor}}">
+                                                <i class="bi bi-flag me-1"></i>
+                                                {{this.priority}}
+                                            </span>
+                                            
+                                            <!-- Tags -->
+                                            {{#each this.tags}}
+                                            <span class="badge bg-light text-dark border">
+                                                {{this}}
+                                            </span>
+                                            {{/each}}
+                                            
+                                            <!-- Additional Info -->
+                                            {{#if this.company}}
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-building me-1"></i>
+                                                {{this.company}}
+                                            </span>
+                                            {{/if}}
+                                            
+                                            {{#if this.deadline}}
+                                            <span class="badge bg-warning">
+                                                <i class="bi bi-calendar me-1"></i>
+                                                Deadline: {{formatDate this.deadline}}
+                                            </span>
+                                            {{/if}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{/each}}
+                        </div>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Pagination -->
+            {{#if (gt filters.totalPages 1)}}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {{#if (eq filters.page 1)}}disabled{{/if}}">
+                        <a class="page-link" href="/email?page={{subtract filters.page 1}}&category={{filters.category}}">
+                            Previous
+                        </a>
+                    </li>
+                    
+                    {{#each (range 1 filters.totalPages)}}
+                    <li class="page-item {{#if (eq this ../filters.page)}}active{{/if}}">
+                        <a class="page-link" href="/email?page={{this}}&category={{../filters.category}}">
+                            {{this}}
+                        </a>
+                    </li>
+                    {{/each}}
+                    
+                    <li class="page-item {{#if (eq filters.page filters.totalPages)}}disabled{{/if}}">
+                        <a class="page-link" href="/email?page={{add filters.page 1}}&category={{filters.category}}">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {{/if}}
+            
+            {{else}}
+            <!-- Empty State -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-envelope display-1 text-muted mb-4"></i>
+                    <h4 class="mb-3">No email notifications yet</h4>
+                    <p class="text-muted mb-4">
+                        {{#if filters.unread}}
+                        No unread emails matching your criteria.
+                        {{else}}
+                        Connect your email account to start receiving notifications for important emails.
+                        {{/if}}
+                    </p>
+                    <a href="/email/connect" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle me-1"></i>Connect Email Account
+                    </a>
+                </div>
+            </div>
+            {{/if}}
+        </div>
+    </div>
+</div>
+
+
+
+{{! Add this somewhere in the email dashboard }}
+<div class="mb-3">
+    <button id="addDemoData" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-plus-circle"></i> Add More Sample Emails
+    </button>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Add Handlebars helpers
+    Handlebars.registerHelper('eq', (a, b) => a === b);
+    Handlebars.registerHelper('gt', (a, b) => a > b);
+    Handlebars.registerHelper('add', (a, b) => a + b);
+    Handlebars.registerHelper('subtract', (a, b) => a - b);
+    Handlebars.registerHelper('range', (start, end) => {
+        const arr = [];
+        for (let i = start; i <= end; i++) arr.push(i);
+        return arr;
+    });
+    
+    // Bulk Selection Functions
+    function toggleSelectAll(checkbox) {
+        const emailCheckboxes = document.querySelectorAll('.email-checkbox');
+        emailCheckboxes.forEach(cb => {
+            cb.checked = checkbox.checked;
+        });
+        updateBulkActions();
+    }
+    
+    function updateBulkActions() {
+        const emailCheckboxes = document.querySelectorAll('.email-checkbox');
+        const selectedCheckboxes = document.querySelectorAll('.email-checkbox:checked');
+        const selectedCount = selectedCheckboxes.length;
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const bulkActions = document.getElementById('bulkActions');
+        const selectedCountSpan = document.getElementById('selectedCount');
+        
+        // Update count
+        selectedCountSpan.textContent = selectedCount;
+        
+        // Show/hide bulk actions
+        if (selectedCount > 0) {
+            bulkActions.style.display = 'block';
+        } else {
+            bulkActions.style.display = 'none';
+        }
+        
+        // Update select all checkbox state
+        if (selectedCount === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        } else if (selectedCount === emailCheckboxes.length) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+    
+    function clearSelection() {
+        const emailCheckboxes = document.querySelectorAll('.email-checkbox');
+        emailCheckboxes.forEach(cb => {
+            cb.checked = false;
+        });
+        updateBulkActions();
+    }
+    
+    async function deleteSelected() {
+        const selectedCheckboxes = document.querySelectorAll('.email-checkbox:checked');
+        const selectedCount = selectedCheckboxes.length;
+        
+        if (selectedCount === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No emails selected',
+                text: 'Please select emails to delete'
+            });
+            return;
+        }
+        
+        // Ask for confirmation
+        const result = await Swal.fire({
+            icon: 'warning',
+            title: 'Delete Emails?',
+            html: `Are you sure you want to delete <strong>${selectedCount}</strong> email(s)?<br>
+                  <small class="text-muted">This action cannot be undone.</small>`,
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete them',
+            confirmButtonColor: '#d33',
+            cancelButtonText: 'Cancel'
+        });
+        
+        if (result.isConfirmed) {
+            try {
+                // Collect selected email IDs
+                const emailIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+                
+                // Submit the form
+                const form = document.getElementById('bulkActionForm');
+                
+                // Create hidden input with CSRF token if needed
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                if (csrfToken) {
+                    let csrfInput = form.querySelector('input[name="_csrf"]');
+                    if (!csrfInput) {
+                        csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = '_csrf';
+                        csrfInput.value = csrfToken;
+                        form.appendChild(csrfInput);
+                    }
+                }
+                
+                // Submit form
+                const response = await fetch('/email/bulk-delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ emailIds: emailIds })
+                });
+                
+                if (response.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Deleted!',
+                        text: `Successfully deleted ${selectedCount} email(s)`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    throw new Error('Delete failed');
+                }
+                
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to delete emails. Please try again.'
+                });
+                console.error('Delete error:', error);
+            }
+        }
+    }
+    
+    // Manual sync
+    async function manualSync() {
+        try {
+            const response = await fetch('/email/sync', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Sync Complete!',
+                    text: `Fetched ${result.totalFetched} emails, saved ${result.saved} notifications`,
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sync Failed',
+                    text: result.message
+                });
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to sync emails'
+            });
+        }
+    }
+    
+    // Toggle unread filter
+    function toggleUnreadFilter() {
+        const unreadOnly = document.getElementById('unreadFilter').checked;
+        const url = new URL(window.location.href);
+        
+        if (unreadOnly) {
+            url.searchParams.set('unread', 'true');
+        } else {
+            url.searchParams.delete('unread');
+        }
+        
+        window.location.href = url.toString();
+    }
+    
+    // Auto-refresh every 5 minutes
+    setInterval(() => {
+        fetch('/email/api/stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update unread count in navbar
+                    const unreadBadge = document.querySelector('.unread-count');
+                    if (unreadBadge && data.stats.unread > 0) {
+                        unreadBadge.textContent = data.stats.unread;
+                        unreadBadge.classList.remove('d-none');
+                    }
+                }
+            });
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    // Initialize bulk actions
+    document.addEventListener('DOMContentLoaded', function() {
+        updateBulkActions();
+    });
+</script>
+
+<script>
+// Sync emails
+document.getElementById('syncEmails')?.addEventListener('click', async function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Syncing...';
+    
+    try {
+        const response = await fetch('/email/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            if (result.count > 0) {
+                alert(`✅ Synced ${result.count} new emails!`);
+            } else {
+                alert('✅ No new emails found.');
+            }
+            window.location.reload();
+        } else if (result.needsReauth) {
+            alert('⚠️ Session expired. Please reconnect your Gmail.');
+            window.location.href = '/email/connect';
+        } else {
+            alert('Error: ' + result.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Sync Now';
+        }
+    } catch (error) {
+        alert('Network error. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Sync Now';
+    }
+});
+
+// Disconnect Gmail
+document.getElementById('disconnectGmail')?.addEventListener('click', async function() {
+    if (confirm('Are you sure you want to disconnect your Gmail account?')) {
+        const response = await fetch('/email/disconnect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert('Gmail disconnected successfully.');
+            window.location.reload();
+        }
+    }
+});
+</script>

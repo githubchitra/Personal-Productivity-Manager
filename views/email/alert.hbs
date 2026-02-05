@@ -1,0 +1,117 @@
+{{! Add this form wrapper around your email list }}
+<form id="bulkDeleteForm" action="/email/bulk-delete" method="POST">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Email Alerts</h4>
+        <div>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="selectAllBtn">
+                Select All
+            </button>
+            <button type="submit" class="btn btn-danger btn-sm" id="deleteSelectedBtn" disabled>
+                <i class="bi bi-trash"></i> Delete Selected
+            </button>
+        </div>
+    </div>
+
+    {{! Your existing email list table - add checkboxes }}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th width="50">
+                        <input type="checkbox" id="masterCheckbox">
+                    </th>
+                    <th>From</th>
+                    <th>Subject</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each emails}}
+                <tr>
+                    <td>
+                        <input type="checkbox" class="email-checkbox" name="emailIds[]" value="{{this.emailId}}">
+                    </td>
+                    <td>{{this.from.name}}</td>
+                    <td>
+                        <a href="/email/{{this.emailId}}">{{this.subject}}</a>
+                        {{#unless this.isRead}}<span class="badge bg-info">New</span>{{/unless}}
+                    </td>
+                    <td>
+                        <span class="badge bg-{{this.category}}">
+                            {{this.category}}
+                        </span>
+                    </td>
+                    <td>{{formatDateIST this.date}}</td>
+                    <td>
+                        <a href="/email/{{this.emailId}}" class="btn btn-sm btn-outline-info">View</a>
+                        <a href="/email/delete/{{this.emailId}}" 
+                           class="btn btn-sm btn-outline-danger"
+                           onclick="return confirm('Delete this email?')">Delete</a>
+                    </td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        No emails found. Try syncing your Gmail account.
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+</form>
+
+{{! Add JavaScript for bulk selection }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const masterCheckbox = document.getElementById('masterCheckbox');
+    const emailCheckboxes = document.querySelectorAll('.email-checkbox');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    
+    // Master checkbox toggle
+    masterCheckbox.addEventListener('change', function() {
+        const isChecked = this.checked;
+        emailCheckboxes.forEach(cb => cb.checked = isChecked);
+        updateDeleteButton();
+    });
+    
+    // Select All button
+    selectAllBtn.addEventListener('click', function() {
+        const allChecked = Array.from(emailCheckboxes).every(cb => cb.checked);
+        emailCheckboxes.forEach(cb => cb.checked = !allChecked);
+        masterCheckbox.checked = !allChecked;
+        updateDeleteButton();
+    });
+    
+    // Individual checkbox change
+    emailCheckboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            updateMasterCheckbox();
+            updateDeleteButton();
+        });
+    });
+    
+    function updateMasterCheckbox() {
+        const allChecked = Array.from(emailCheckboxes).every(cb => cb.checked);
+        const anyChecked = Array.from(emailCheckboxes).some(cb => cb.checked);
+        masterCheckbox.checked = allChecked;
+        masterCheckbox.indeterminate = anyChecked && !allChecked;
+    }
+    
+    function updateDeleteButton() {
+        const anyChecked = Array.from(emailCheckboxes).some(cb => cb.checked);
+        deleteSelectedBtn.disabled = !anyChecked;
+    }
+    
+    // Form submission confirmation
+    document.getElementById('bulkDeleteForm').addEventListener('submit', function(e) {
+        const selectedCount = document.querySelectorAll('.email-checkbox:checked').length;
+        if (!confirm(`Delete ${selectedCount} selected email(s)?`)) {
+            e.preventDefault();
+        }
+    });
+});
+</script>

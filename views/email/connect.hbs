@@ -1,0 +1,283 @@
+{{!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - College Helper</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .email-connect-container {
+            max-width: 500px;
+            margin: 40px auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        .provider-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .provider-badge:hover {
+            background: #e9ecef;
+            border-color: #6c757d;
+        }
+        .provider-badge.active {
+            background: #4a6baf;
+            color: white;
+            border-color: #4a6baf;
+        }
+        .provider-icon {
+            width: 24px;
+            height: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container email-connect-container">
+        <h2 class="text-center mb-4">📧 Connect Your Email Account</h2>
+        <p class="text-center text-muted mb-4">Connect your college email to receive automated notifications</p>
+        
+        <form id="emailConnectForm">
+            <div class="mb-4">
+                <label class="form-label">Select Email Provider</label>
+                <div class="d-flex flex-wrap gap-3 mb-3">
+                    <div class="provider-badge" data-provider="gmail">
+                        <img src="https://img.icons8.com/color/24/000000/gmail-new.png" alt="Gmail" class="provider-icon">
+                        <span>Gmail</span>
+                    </div>
+                    <div class="provider-badge" data-provider="outlook">
+                        <img src="https://img.icons8.com/color/24/000000/microsoft-outlook-2019.png" alt="Outlook" class="provider-icon">
+                        <span>Outlook</span>
+                    </div>
+                    <div class="provider-badge" data-provider="yahoo">
+                        <img src="https://img.icons8.com/color/24/000000/yahoo.png" alt="Yahoo" class="provider-icon">
+                        <span>Yahoo</span>
+                    </div>
+                </div>
+                <input type="hidden" id="provider" name="provider" value="gmail" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" class="form-control" id="email" name="email" 
+                       placeholder="your.email@college.edu" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="password" class="form-label">Password / App Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+                <div class="form-text">
+                    For Gmail, you may need to use an 
+                    <a href="https://support.google.com/accounts/answer/185833" target="_blank">App Password</a> 
+                    if you have 2FA enabled.
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label for="syncInterval" class="form-label">Sync Interval (minutes)</label>
+                <select class="form-select" id="syncInterval" name="syncInterval">
+                    <option value="15">Every 15 minutes</option>
+                    <option value="30" selected>Every 30 minutes</option>
+                    <option value="60">Every hour</option>
+                    <option value="180">Every 3 hours</option>
+                    <option value="360">Every 6 hours</option>
+                </select>
+                <div class="form-text">How often to check for new emails</div>
+            </div>
+            
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <span id="connectBtnText">Connect Email Account</span>
+                    <div id="connectSpinner" class="spinner-border spinner-border-sm d-none" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </button>
+                <a href="/email" class="btn btn-outline-secondary">Skip for Now</a>
+            </div>
+        </form>
+        
+        <div class="alert alert-info mt-4">
+            <h6>📋 What happens when you connect?</h6>
+            <ul class="mb-0">
+                <li>Automatic email syncing based on your schedule</li>
+                <li>Notifications for important emails (assignments, exams, etc.)</li>
+                <li>Categorization of emails by type (academic, administrative, etc.)</li>
+                <li>Priority highlighting for urgent messages</li>
+                <li>Your credentials are stored securely in session only</li>
+            </ul>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle provider selection
+        document.querySelectorAll('.provider-badge').forEach(badge => {
+            badge.addEventListener('click', () => {
+                // Remove active class from all badges
+                document.querySelectorAll('.provider-badge').forEach(b => {
+                    b.classList.remove('active');
+                });
+                // Add active class to clicked badge
+                badge.classList.add('active');
+                // Update hidden input
+                document.getElementById('provider').value = badge.dataset.provider;
+            });
+        });
+        
+        // Activate first provider by default
+        document.querySelector('.provider-badge').classList.add('active');
+        
+        // Handle form submission
+        document.getElementById('emailConnectForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.querySelector('[type="submit"]');
+            const btnText = document.getElementById('connectBtnText');
+            const spinner = document.getElementById('connectSpinner');
+            
+            // Show loading state
+            btn.disabled = true;
+            btnText.textContent = 'Connecting...';
+            spinner.classList.remove('d-none');
+            
+            try {
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData.entries());
+                
+                const response = await fetch('/email/connect', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success message
+                    alert('✅ ' + result.message);
+                    // Redirect to email page
+                    window.location.href = '/email';
+                } else {
+                    alert('❌ ' + result.message);
+                    // Reset button
+                    btn.disabled = false;
+                    btnText.textContent = 'Connect Email Account';
+                    spinner.classList.add('d-none');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ An error occurred. Please try again.');
+                btn.disabled = false;
+                btnText.textContent = 'Connect Email Account';
+                spinner.classList.add('d-none');
+            }
+        });
+    </script>
+</body>
+</html> --}}
+
+
+
+
+
+
+
+
+
+
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-envelope-plus"></i> Connect Your Email
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {{#if success}}
+                        <div class="alert alert-success">
+                            {{success}}
+                        </div>
+                    {{/if}}
+                    
+                    {{#if error}}
+                        <div class="alert alert-danger">
+                            {{error}}
+                        </div>
+                    {{/if}}
+                    
+                    <div class="text-center mb-5">
+                        <i class="bi bi-envelope-check display-1 text-primary"></i>
+                        <h3 class="mt-3">Connect Securely</h3>
+                        <p class="lead">We never see your password. Connect using Google's secure login.</p>
+                    </div>
+                    
+                    <!-- Google OAuth Button -->
+                    <div class="text-center mb-4">
+                        <a href="{{googleAuthUrl}}" class="btn btn-lg btn-outline-primary" style="border-radius: 50px; padding: 12px 30px;">
+                            <i class="bi bi-google me-2"></i> Connect with Gmail
+                        </a>
+                        <p class="text-muted mt-2">Secure OAuth connection - We only read email metadata</p>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="bi bi-shield-check text-success"></i> How It Works:</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i> Click "Connect with Gmail"</li>
+                                <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i> Login to your Google account</li>
+                                <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i> Grant read-only access</li>
+                                <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i> We scan for opportunities</li>
+                                <li><i class="bi bi-check-circle text-success me-2"></i> Get organized notifications</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5><i class="bi bi-lock text-info"></i> Your Privacy:</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="bi bi-safe text-info me-2"></i> We never see your password</li>
+                                <li class="mb-2"><i class="bi bi-safe text-info me-2"></i> Read-only access only</li>
+                                <li class="mb-2"><i class="bi bi-safe text-info me-2"></i> No email content stored</li>
+                                <li class="mb-2"><i class="bi bi-safe text-info me-2"></i> You can disconnect anytime</li>
+                                <li><i class="bi bi-safe text-info me-2"></i> Encrypted data storage</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 text-center">
+                        <a href="/email" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Email Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Check if we have an OAuth error in URL
+if (window.location.search.includes('error=')) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    
+    if (error === 'access_denied') {
+        alert('You cancelled the Gmail connection. Please try again if you want to connect.');
+    }
+}
+</script>
+

@@ -1,0 +1,324 @@
+/* Home Page Specific Styles */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    padding: 20px 0;
+}
+
+.dashboard-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.dashboard-card .bi {
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.dashboard-card:hover .bi {
+    transform: scale(1.3) rotate(5deg);
+}
+
+/* Feature badges on home page */
+.feature-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #ff4757;
+    color: white;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Demo todo list styles */
+.demo-todo-item {
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.demo-todo-item:hover {
+    background-color: rgba(102, 126, 234, 0.1);
+    border-left-color: #667eea;
+}
+
+.demo-todo-item.completed {
+    border-left-color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.demo-todo-item.high-priority {
+    border-left-color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.demo-todo-item.medium-priority {
+    border-left-color: #ffc107;
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+/* Call to action button */
+.cta-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.cta-outline-button {
+    background: transparent;
+    border: 2px solid #667eea;
+    color: #667eea;
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+}
+
+.cta-outline-button:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}
+
+/* Toast notifications */
+.toast-container {
+    z-index: 1055;
+}
+
+.toast {
+    min-width: 250px;
+    margin-bottom: 10px;
+}
+
+/* Button loading states */
+.btn .spinner-border {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+}
+
+/* Table row animations */
+@keyframes highlightRow {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(13, 110, 253, 0.1); }
+    100% { background-color: transparent; }
+}
+
+.highlight-row {
+    animation: highlightRow 1s ease;
+}
+
+/* Badge colors */
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Progress bars */
+.progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+/* Button group spacing */
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    margin-right: 0.25rem;
+}
+
+.btn-group-sm .btn:last-child {
+    margin-right: 0;
+} 
+
+/* Calendar Styles */
+#reminderCalendar {
+    min-height: 500px;
+}
+
+.fc-event {
+    cursor: pointer;
+}
+
+/* Status badges */
+.badge.bg-warning {
+    color: #212529;
+}
+
+/* Hover effects */
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* Modal styling */
+.modal-content {
+    border-radius: 10px;
+}
+
+/* Priority colors */
+.priority-high {
+    border-left: 4px solid #dc3545;
+}
+
+.priority-medium {
+    border-left: 4px solid #ffc107;
+}
+
+.priority-low {
+    border-left: 4px solid #0d6efd;
+}
+
+/* Todo List Styles */
+.todo-item {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.todo-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(2px);
+}
+
+.todo-item.completed {
+    background-color: #f8fff8;
+    opacity: 0.8;
+}
+
+.todo-item.overdue {
+    border-left-color: #dc3545;
+}
+
+.todo-item.completed .todo-title {
+    color: #6c757d !important;
+}
+
+/* Priority colors */
+.todo-item[data-priority="high"] {
+    border-left-color: #dc3545;
+}
+
+.todo-item[data-priority="medium"] {
+    border-left-color: #ffc107;
+}
+
+.todo-item[data-priority="low"] {
+    border-left-color: #0dcaf0;
+}
+
+/* Checkbox styling */
+.todo-checkbox {
+    width: 1.2em;
+    height: 1.2em;
+    cursor: pointer;
+}
+
+.todo-checkbox:checked {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+/* Scrollbar styling for todo container */
+.todo-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.todo-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.todo-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.todo-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Animation for adding/removing todos */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.todo-item {
+    animation: slideIn 0.3s ease;
+}
+
+/* Bulk actions styling */
+#deleteSelectedBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.email-checkbox {
+    cursor: pointer;
+}
+
+.table-hover tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* Badge colors for categories */
+.badge.bg-job { background-color: #28a745; }
+.badge.bg-internship { background-color: #17a2b8; }
+.badge.bg-hackathon { background-color: #6f42c1; }
+.badge.bg-college { background-color: #fd7e14; }
+.badge.bg-other { background-color: #6c757d; }
