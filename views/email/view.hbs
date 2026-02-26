@@ -1,81 +1,81 @@
 {{! views/email/view.hbs }}
-{{#extend "layout/main"}}
-    
-    {{#content "content"}}
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-12">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="/email">Email Alerts</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Email Details</li>
-                    </ol>
-                </nav>
+{{#extend "main"}}
 
-                {{#if email}}
-                <div class="card">
-                    <div class="card-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Email Details</h5>
-                            <span class="badge bg-{{priorityColor email.priority}}">
-                                {{email.priority}}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="email-header mb-4">
-                            <h4>{{email.subject}}</h4>
-                            <div class="text-muted">
-                                <strong>From:</strong> {{email.from.name}} &lt;{{email.from.email}}&gt;
-                            </div>
-                            <div class="text-muted">
-                                <strong>Date:</strong> {{formatDateIST email.date}}
-                            </div>
-                            <div class="text-muted">
-                                <strong>Category:</strong> 
-                                <span class="badge bg-info">{{email.category}}</span>
-                            </div>
-                        </div>
+{{#content "content"}}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="/email">Email Alerts</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Email Details</li>
+                </ol>
+            </nav>
 
-                        <div class="email-body border-top pt-3">
-                            <h6>Content:</h6>
-                            <div class="p-3 bg-light rounded">
-                                {{#if email.body}}
-                                    <pre style="white-space: pre-wrap;">{{email.body}}</pre>
-                                {{else}}
-                                    <p class="text-muted">{{email.snippet}}</p>
-                                {{/if}}
-                            </div>
-                        </div>
-
-                        {{#if email.tags.length}}
-                        <div class="email-tags mt-3">
-                            <h6>Tags:</h6>
-                            <div>
-                                {{#each email.tags}}
-                                    <span class="badge bg-secondary me-1">{{this}}</span>
-                                {{/each}}
-                            </div>
-                        </div>
-                        {{/if}}
-                    </div>
-                    <div class="card-footer">
-                        <a href="/email" class="btn btn-secondary">Back to Emails</a>
-                        <button class="btn btn-primary ms-2">Mark as Read</button>
-                        <button class="btn btn-outline-danger ms-2">Archive</button>
+            {{#if email}}
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Email Details</h5>
+                        <span class="badge bg-{{priorityColor email.priority}}">
+                            {{email.priority}}
+                        </span>
                     </div>
                 </div>
-                {{else}}
-                <div class="alert alert-warning">
-                    <h4>Email Not Found</h4>
-                    <p>The requested email could not be found.</p>
+                <div class="card-body">
+                    <div class="email-header mb-4">
+                        <h4>{{email.subject}}</h4>
+                        <div class="text-muted">
+                            <strong>From:</strong> {{email.from.name}} &lt;{{email.from.email}}&gt;
+                        </div>
+                        <div class="text-muted">
+                            <strong>Date:</strong> {{formatDateIST email.date}}
+                        </div>
+                        <div class="text-muted">
+                            <strong>Category:</strong>
+                            <span class="badge bg-info">{{email.category}}</span>
+                        </div>
+                    </div>
+
+                    <div class="email-body border-top pt-3">
+                        <h6>Content:</h6>
+                        <div class="p-3 bg-light rounded">
+                            {{#if email.body}}
+                            <pre style="white-space: pre-wrap;">{{email.body}}</pre>
+                            {{else}}
+                            <p class="text-muted">{{email.snippet}}</p>
+                            {{/if}}
+                        </div>
+                    </div>
+
+                    {{#if email.tags.length}}
+                    <div class="email-tags mt-3">
+                        <h6>Tags:</h6>
+                        <div>
+                            {{#each email.tags}}
+                            <span class="badge bg-secondary me-1">{{this}}</span>
+                            {{/each}}
+                        </div>
+                    </div>
+                    {{/if}}
+                </div>
+                <div class="card-footer">
                     <a href="/email" class="btn btn-secondary">Back to Emails</a>
+                    <button class="btn btn-primary ms-2">Mark as Read</button>
+                    <button class="btn btn-outline-danger ms-2">Archive</button>
                 </div>
-                {{/if}}
             </div>
+            {{else}}
+            <div class="alert alert-warning">
+                <h4>Email Not Found</h4>
+                <p>The requested email could not be found.</p>
+                <a href="/email" class="btn btn-secondary">Back to Emails</a>
+            </div>
+            {{/if}}
         </div>
     </div>
-    {{/content}}
+</div>
+{{/content}}
 
 {{/extend}}

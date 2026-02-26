@@ -1,0 +1,47 @@
+{
+  "name": "college-portal",
+  "version": "1.0.0",
+  "description": "Unified College Helper Portal",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cheerio": "^1.1.2",
+    "connect-mongo": "^4.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "express-handlebars": "^7.1.2",
+    "express-handlebars-layouts": "^1.0.0",
+    "express-session": "^1.17.3",
+    "fullcalendar": "^6.1.19",
+    "googleapis": "^169.0.0",
+    "handlebars": "^4.7.8",
+    "handlebars-layouts": "^3.1.4",
+    "imap": "^0.8.19",
+    "imap-simple": "^5.1.0",
+    "mailparser": "^3.9.1",
+    "moment": "^2.29.4",
+    "mongoose": "^7.4.3",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.2",
+    "nodemailer": "^6.10.1",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "college",
+    "portal",
+    "attendance",
+    "notes",
+    "progress"
+  ],
+  "author": "",
+  "license": "MIT"
+}

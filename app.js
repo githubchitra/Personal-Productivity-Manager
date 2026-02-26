@@ -6,6 +6,7 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const path = require('path');
 const handlebars = require('handlebars');
+const handlebarsLayouts = require('handlebars-layouts')(handlebars);
 
 // Initialize Express app
 const app = express();
@@ -65,6 +66,11 @@ const hbs = exphbs.create({
     extname: '.hbs',
     defaultLayout: 'main',
     layoutsDir: path.join(__dirname, 'views/layouts'),
+    partialsDir: [
+        path.join(__dirname, 'views/partials'),
+        path.join(__dirname, 'views/layouts')
+    ],
+    handlebars: handlebars,
     helpers: {
         // Comparison helpers
         eq: (a, b) => a === b,

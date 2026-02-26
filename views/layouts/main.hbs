@@ -101,7 +101,9 @@
         </div>
         {{/if}}
 
-        {{{body}}}
+        {{#block "content"}}
+            {{{body}}}
+        {{/block}}
     </main>
 
     <!-- Footer -->
