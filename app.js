@@ -744,3 +744,5 @@ app.listen(PORT, () => {
     console.log(`📊 MongoDB URI: ${process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/college-portal'}`);
     console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+console.log('hiiiiiiiiiiiiiiiiiiiiiiiii')
