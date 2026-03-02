@@ -20,14 +20,14 @@ class GmailService {
         this.gmail = google.gmail({ version: 'v1', auth: this.oAuth2Client });
     }
 
-    async getUnreadEmails() {
+    async getUnreadEmails(unreadOnly = true) {
         try {
             this.initialize();
 
-            // Get list of unread messages
+            const query = `${unreadOnly ? 'is:unread ' : ''}subject:(job OR jobs OR internship OR internships OR hackathon OR college OR placement OR career)`;
             const response = await this.gmail.users.messages.list({
                 userId: 'me',
-                q: 'is:unread',
+                q: query,
                 maxResults: 50
             });
 
@@ -80,6 +80,12 @@ class GmailService {
             });
 
             if (!existing) {
+                // Skip 'other' if we want to be strict
+                if (category === 'other' && priority === 'low') {
+                    console.log(`⏩ Skipping irrelevant: ${subject}`);
+                    return;
+                }
+
                 // Save to database
                 const emailNotification = new EmailNotification({
                     userId: this.userId,
@@ -144,7 +150,7 @@ class GmailService {
 
         // EXCLUDE unwanted senders first
         const excludeKeywords = [
-            'instagram', 'facebook', 'twitter', 'youtube', 'netflix',
+            'pinterest', 'instagram', 'facebook', 'twitter', 'youtube', 'netflix',
             'amazon', 'flipkart', 'myntra', 'whatsapp', 'telegram',
             'spam', 'promotion', 'newsletter', 'notification',
             'alert', 'update', 'security', 'verification'

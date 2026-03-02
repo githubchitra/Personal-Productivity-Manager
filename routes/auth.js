@@ -3,6 +3,75 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+
+
+// Configure Passport Google Strategy
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/auth/google/callback",
+    userProfileURL: 'https://www.googleapis.com/oauth2/v3/userinfo'
+},
+    async (accessToken, refreshToken, profile, done) => {
+        try {
+            console.log('🔍 Google OAuth Profile received:', profile.displayName || profile.id);
+            // Find or create user in your database
+            let user = await User.findOne({ googleId: profile.id });
+
+            if (!user) {
+                // Check if user exists with same email
+                user = await User.findOne({ email: profile.emails[0].value.toLowerCase() });
+
+                if (user) {
+                    // Link Google account to existing user
+                    user.googleId = profile.id;
+                    user.googleAccessToken = accessToken;
+                    user.googleRefreshToken = refreshToken;
+                    await user.save();
+                } else {
+                    // Create new user
+                    user = new User({
+                        username: profile.displayName || profile.emails[0].value.split('@')[0],
+                        email: profile.emails[0].value.toLowerCase(),
+                        googleId: profile.id,
+                        googleAccessToken: accessToken,
+                        googleRefreshToken: refreshToken,
+                        // Set default values
+                        college: '',
+                        semester: 1
+                    });
+                    await user.save();
+                }
+            } else {
+                // Update tokens specifically if user logs in again
+                user.googleAccessToken = accessToken;
+                if (refreshToken) {
+                    user.googleRefreshToken = refreshToken;
+                }
+                await user.save();
+            }
+            return done(null, user);
+        } catch (error) {
+            return done(error, null);
+        }
+    }
+));
+
+// Required for passport session management, though we manually handle session mapping later
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+passport.deserializeUser(async (id, done) => {
+    try {
+        const user = await User.findById(id);
+        done(null, user);
+    } catch (err) {
+        done(err, null);
+    }
+});
+
 // In routes/auth.js, make sure you have:
 router.get('/', (req, res) => {
     if (req.session.user) {
@@ -20,29 +89,29 @@ router.get('/login', (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        
+
         console.log('Login attempt for username:', username);
-        
+
         // Find user by username
         const user = await User.findOne({ username: username.trim() });
-        
+
         if (!user) {
             console.log('No user found with username:', username);
             req.session.error = 'User not found';
             return res.redirect('/login');
         }
-        
+
         console.log('User found:', user.username);
-        
+
         // Check password
         const isValidPassword = await user.comparePassword(password);
-        
+
         if (!isValidPassword) {
             console.log('Invalid password for user:', user.username);
             req.session.error = 'Invalid password';
             return res.redirect('/login');
         }
-        
+
         // Set session data
         req.session.user = {
             _id: user._id,
@@ -52,10 +121,10 @@ router.post('/login', async (req, res) => {
             college: user.college,
             semester: user.semester
         };
-        
+
         console.log('Session set for user:', req.session.user.username);
         console.log('Session ID:', req.sessionID);
-        
+
         // Force session save with callback
         req.session.save((saveErr) => {
             if (saveErr) {
@@ -63,15 +132,15 @@ router.post('/login', async (req, res) => {
                 req.session.error = 'Login failed - session error';
                 return res.redirect('/login');
             }
-            
+
             console.log('✅ Session saved successfully');
             console.log('✅ Login successful, redirecting to /dashboard');
-            
+
             // Add timestamp to prevent caching issues
             const timestamp = Date.now();
             res.redirect(`/dashboard?t=${timestamp}`);
         });
-        
+
     } catch (error) {
         console.error('Login error:', error);
         req.session.error = 'Login failed';
@@ -88,9 +157,9 @@ router.get('/register', (req, res) => {
 router.post('/register', async (req, res) => {
     try {
         const { username, email, password, confirmPassword, college, semester } = req.body;
-        
+
         console.log('Registration attempt for:', username, email); // Debug
-        
+
         // Check required fields
         if (!username || !email || !password) {
             return res.render('auth/register', {
@@ -102,7 +171,7 @@ router.post('/register', async (req, res) => {
                 semester
             });
         }
-        
+
         if (password !== confirmPassword) {
             return res.render('auth/register', {
                 error: 'Passwords do not match',
@@ -113,12 +182,12 @@ router.post('/register', async (req, res) => {
                 semester
             });
         }
-        
+
         // Check if username or email already exists
-        const existingUser = await User.findOne({ 
-            $or: [{ username }, { email: email.toLowerCase() }] 
+        const existingUser = await User.findOne({
+            $or: [{ username }, { email: email.toLowerCase() }]
         });
-        
+
         if (existingUser) {
             let errorMsg = 'Username or email already exists';
             if (existingUser.username === username) {
@@ -126,7 +195,7 @@ router.post('/register', async (req, res) => {
             } else if (existingUser.email === email.toLowerCase()) {
                 errorMsg = 'Email already registered';
             }
-            
+
             return res.render('auth/register', {
                 error: errorMsg,
                 title: 'Register',
@@ -136,7 +205,7 @@ router.post('/register', async (req, res) => {
                 semester
             });
         }
-        
+
         // Create new user
         const user = new User({
             username,
@@ -145,10 +214,10 @@ router.post('/register', async (req, res) => {
             college: college || '',
             semester: semester || 1
         });
-        
+
         await user.save();
         console.log('User created:', user.username); // Debug
-        
+
         // Set session - same structure as login
         req.session.user = {
             _id: user._id,
@@ -158,7 +227,7 @@ router.post('/register', async (req, res) => {
             college: user.college,
             semester: user.semester
         };
-        
+
         // Save session
         req.session.save((err) => {
             if (err) {
@@ -169,7 +238,7 @@ router.post('/register', async (req, res) => {
             console.log('Registration successful, redirecting to dashboard');
             res.redirect('/dashboard');
         });
-        
+
     } catch (err) {
         console.error('Registration error:', err);
         res.render('auth/register', {
@@ -182,6 +251,52 @@ router.post('/register', async (req, res) => {
         });
     }
 });
+
+// Register handle (omitted from display, kept as is) ...
+
+// ======================= GOOGLE AUTH ROUTES =======================
+
+// Initiate Google Login
+router.get('/auth/google',
+    passport.authenticate('google', {
+        scope: ['profile', 'email', 'openid', 'https://www.googleapis.com/auth/gmail.readonly'],
+        accessType: 'offline', // Requests a refresh token
+        prompt: 'consent', // Forces consent screen to ensure refresh token is returned
+        includeGrantedScopes: true // Helps if user has already granted some scopes
+    })
+);
+
+// Google Auth Callback
+router.get('/auth/google/callback',
+    passport.authenticate('google', {
+        failureRedirect: '/login',
+        failureMessage: true
+    }),
+    (req, res) => {
+        // Successful authentication
+        req.session.user = {
+            _id: req.user._id,
+            id: req.user._id,
+            username: req.user.username,
+            email: req.user.email,
+            college: req.user.college,
+            semester: req.user.semester,
+            // If we got new tokens, store them in the session
+            gmailTokens: {
+                access_token: req.user.googleAccessToken,
+                refresh_token: req.user.googleRefreshToken,
+            }
+        };
+
+        req.session.save((err) => {
+            if (err) {
+                console.error("Session save error after Google login:", err);
+                return res.redirect('/login');
+            }
+            res.redirect('/dashboard');
+        });
+    }
+);
 
 // Logout
 router.get('/logout', (req, res) => {

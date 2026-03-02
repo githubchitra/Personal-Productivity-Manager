@@ -3,6 +3,7 @@ const express = require('express');
 const exphbs = require('express-handlebars');
 const mongoose = require('mongoose');
 const session = require('express-session');
+const passport = require('passport');
 const MongoStore = require('connect-mongo');
 const path = require('path');
 const handlebars = require('handlebars');
@@ -203,6 +204,28 @@ const hbs = exphbs.create({
         },
 
         timeAgo: function (date) {
+            if (!date) return 'Just now';
+            const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+
+            let interval = Math.floor(seconds / 31536000);
+            if (interval >= 1) return interval + ' year' + (interval > 1 ? 's' : '') + ' ago';
+
+            interval = Math.floor(seconds / 2592000);
+            if (interval >= 1) return interval + ' month' + (interval > 1 ? 's' : '') + ' ago';
+
+            interval = Math.floor(seconds / 86400);
+            if (interval >= 1) return interval + ' day' + (interval > 1 ? 's' : '') + ' ago';
+
+            interval = Math.floor(seconds / 3600);
+            if (interval >= 1) return interval + ' hour' + (interval > 1 ? 's' : '') + ' ago';
+
+            interval = Math.floor(seconds / 60);
+            if (interval >= 1) return interval + ' minute' + (interval > 1 ? 's' : '') + ' ago';
+
+            return 'Just now';
+        },
+
+        formatTimeAgo: function (date) {
             if (!date) return 'Just now';
             const seconds = Math.floor((new Date() - new Date(date)) / 1000);
 
@@ -640,6 +663,10 @@ app.use(session({
         sameSite: 'lax'
     }
 }));
+
+// Initialize Passport and restore authentication state, if any, from the session.
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Flash messages middleware
 app.use((req, res, next) => {

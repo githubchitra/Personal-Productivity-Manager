@@ -3,6 +3,8 @@ const router = express.Router();
 const { google } = require('googleapis');
 const EmailNotification = require('../models/EmailNotification');
 const GmailService = require('../utils/gmailService');
+const { EmailService } = require('../services/emailService');
+const SmartEmailConnector = require('../services/smartEmailService');
 
 // Authentication middleware
 const requireAuth = (req, res, next) => {
@@ -14,11 +16,12 @@ const requireAuth = (req, res, next) => {
 
 router.use(requireAuth);
 
-// OAuth2 roClient
+const gmailRedirectUri = process.env.GMAIL_REDIRECT_URI || 'http://localhost:3000/email/auth/callback';
+
 const oAuth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
+    gmailRedirectUri
 );
 
 // ==================== ADD THIS MIDDLEWARE ====================
@@ -27,7 +30,7 @@ const isAuthenticated = (req, res, next) => {
     console.log('=== AUTH MIDDLEWARE CHECK ===');
     console.log('Path:', req.path);
     console.log('Session user:', req.session?.user?.username);
-    
+
     if (req.session && req.session.user) {
         console.log('✅ User authenticated:', req.session.user.username);
         return next();
@@ -42,23 +45,23 @@ router.get('/', async (req, res) => {
     try {
         const userId = req.session.user.id;
         const { category, priority, page = 1, limit = 20, unread } = req.query;
-        
+
         let query = { userId, isArchived: false };
-        
+
         if (category && category !== 'all') {
             query.category = category;
         }
-        
+
         if (priority && priority !== 'all') {
             query.priority = priority;
         }
-        
+
         if (unread === 'true') {
             query.isRead = false;
         }
-        
+
         const skip = (parseInt(page) - 1) * parseInt(limit);
-        
+
         const [notifications, total, unreadCount] = await Promise.all([
             EmailNotification.find(query)
                 .sort({ date: -1, priority: -1 })
@@ -68,19 +71,19 @@ router.get('/', async (req, res) => {
             EmailNotification.countDocuments(query),
             EmailNotification.countDocuments({ userId, isRead: false })
         ]);
-        
+
         // Get counts by category
         const categoryCounts = await EmailNotification.aggregate([
             { $match: { userId, isArchived: false } },
             { $group: { _id: '$category', count: { $sum: 1 } } }
         ]);
-        
+
         // Get today's important emails
         const todayImportant = await EmailNotification.getTodayImportant(userId);
-        
+
         // Check if user has connected Gmail
         const hasGmailConnection = req.session.user.gmailTokens ? true : false;
-        
+
         res.render('email/index', {
             title: 'Email Notifications',
             activeTab: 'email',
@@ -119,10 +122,15 @@ router.get('/connect', (req, res) => {
     // Generate Google OAuth URL
     const authUrl = oAuth2Client.generateAuthUrl({
         access_type: 'offline',
-        scope: ['https://www.googleapis.com/auth/gmail.readonly'],
-        prompt: 'consent'
+        scope: [
+            'https://www.googleapis.com/auth/userinfo.profile',
+            'https://www.googleapis.com/auth/userinfo.email',
+            'https://www.googleapis.com/auth/gmail.readonly'
+        ],
+        prompt: 'consent select_account',
+        include_granted_scopes: true
     });
-    
+
     res.render('email/connect', {
         title: 'Connect Email',
         activeTab: 'email',
@@ -135,34 +143,40 @@ router.get('/connect', (req, res) => {
 router.get('/auth/callback', async (req, res) => {
     try {
         const { code } = req.query;
-        const userId = req.session.user.id;
-        
+        const userId = req.session?.user?.id || req.session?.user?._id;
+
+        if (!userId) {
+            console.error('❌ User session lost during Gmail OAuth callback');
+            req.session.error = 'Session expired. Please log in again.';
+            return res.redirect('/login');
+        }
+
         if (!code) {
             throw new Error('No authorization code received');
         }
-        
+
         console.log('📨 Received OAuth code, exchanging for tokens...');
-        
+
         // Exchange code for tokens
         const { tokens } = await oAuth2Client.getToken(code);
-        
+
         // Store tokens in session
         req.session.user.gmailTokens = tokens;
-        
+
         // Test connection
         const gmailService = new GmailService(userId, tokens);
-        
+
         // Fetch initial emails
         const result = await gmailService.getUnreadEmails();
-        
+
         console.log('✅ Gmail connected successfully!');
-        
-        req.session.success = result.count > 0 
-            ? `Connected to Gmail! Found ${result.count} new emails.` 
+
+        req.session.success = result.count > 0
+            ? `Connected to Gmail! Found ${result.count} new emails.`
             : 'Connected to Gmail! No new emails found.';
-        
+
         res.redirect('/email');
-        
+
     } catch (error) {
         console.error('OAuth callback error:', error);
         req.session.error = 'Failed to connect Gmail. Please try again.';
@@ -175,37 +189,38 @@ router.post('/sync', async (req, res) => {
     try {
         const userId = req.session.user.id;
         const tokens = req.session.user.gmailTokens;
-        
+
         if (!tokens) {
             return res.status(400).json({
                 success: false,
                 message: 'No Gmail account connected. Please connect first.'
             });
         }
-        
-        const gmailService = new GmailService(userId, tokens);
-        const result = await gmailService.getUnreadEmails();
-        
+
+        // Use the new SmartEmailConnector for more robust sync and filtering
+        const connector = new SmartEmailConnector(userId, { type: 'gmail_oauth', tokens });
+        const result = await connector.sync();
+
         res.json({
             success: true,
             message: `Synced ${result.count} new emails`,
             count: result.count
         });
-        
+
     } catch (error) {
         console.error('Sync error:', error);
-        
+
         // If token expired, try to refresh
         if (error.message.includes('invalid_grant') || error.message.includes('token expired')) {
             try {
                 const gmailService = new GmailService(userId, req.session.user.gmailTokens);
                 const newTokens = await gmailService.refreshAccessToken();
                 req.session.user.gmailTokens = newTokens;
-                
+
                 // Retry sync
                 const gmailService2 = new GmailService(userId, newTokens);
                 const result = await gmailService2.getUnreadEmails();
-                
+
                 return res.json({
                     success: true,
                     message: `Synced ${result.count} new emails (token refreshed)`,
@@ -221,7 +236,7 @@ router.post('/sync', async (req, res) => {
                 });
             }
         }
-        
+
         res.status(500).json({
             success: false,
             message: 'Failed to sync emails'
@@ -233,20 +248,20 @@ router.post('/sync', async (req, res) => {
 router.post('/disconnect', async (req, res) => {
     try {
         const userId = req.session.user.id;
-        
+
         // Clear tokens from session
         if (req.session.user.gmailTokens) {
             delete req.session.user.gmailTokens;
         }
-        
+
         // Optionally: Clear stored emails from database
         // await EmailNotification.deleteMany({ userId });
-        
+
         res.json({
             success: true,
             message: 'Gmail disconnected successfully'
         });
-        
+
     } catch (error) {
         console.error('Disconnect error:', error);
         res.status(500).json({
@@ -260,20 +275,20 @@ router.post('/disconnect', async (req, res) => {
 router.post('/auto-sync', async (req, res) => {
     try {
         const { userId, tokens } = req.body;
-        
+
         if (!userId || !tokens) {
             return res.status(400).json({ success: false, message: 'Missing parameters' });
         }
-        
+
         const gmailService = new GmailService(userId, tokens);
         const result = await gmailService.getUnreadEmails();
-        
+
         res.json({
             success: true,
             message: `Auto-synced ${result.count} emails`,
             timestamp: new Date()
         });
-        
+
     } catch (error) {
         console.error('Auto-sync error:', error);
         res.status(500).json({ success: false, message: error.message });
@@ -283,7 +298,7 @@ router.post('/auto-sync', async (req, res) => {
 router.post('/test-connection', async (req, res) => {
     try {
         const { email, password, provider } = req.body;
-        
+
         // Validate input
         if (!email || !password) {
             return res.status(400).json({
@@ -291,10 +306,10 @@ router.post('/test-connection', async (req, res) => {
                 message: 'Email and password are required'
             });
         }
-        
+
         // Determine IMAP settings based on provider
         let host, port;
-        switch(provider) {
+        switch (provider) {
             case 'gmail':
                 host = 'imap.gmail.com';
                 port = 993;
@@ -313,12 +328,12 @@ router.post('/test-connection', async (req, res) => {
                     message: 'Invalid email provider'
                 });
         }
-        
+
         // For development: Accept self-signed certificates
         const tlsOptions = process.env.NODE_ENV === 'production' ? {} : {
             rejectUnauthorized: false
         };
-        
+
         // Test connection with better error handling
         const testService = new EmailService('test', {
             user: email,
@@ -330,25 +345,25 @@ router.post('/test-connection', async (req, res) => {
             authTimeout: 10000, // 10 seconds timeout
             connTimeout: 30000  // 30 seconds connection timeout
         });
-        
+
         let connectionResult;
         try {
             console.log(`Testing connection to ${email} via ${host}:${port}`);
             connectionResult = await testService.connect();
             await testService.disconnect();
-            
+
             return res.json({
                 success: true,
                 message: 'Connection successful! Email server is reachable.',
                 provider: provider
             });
-            
+
         } catch (connectError) {
             console.error('Connection test failed:', connectError.message);
-            
+
             // Provide more user-friendly error messages
             let errorMessage = 'Failed to connect to email server. ';
-            
+
             if (connectError.code === 'ECONNREFUSED') {
                 errorMessage += 'Connection refused. Please check if IMAP is enabled for your email account.';
             } else if (connectError.code === 'ETIMEDOUT') {
@@ -360,19 +375,19 @@ router.post('/test-connection', async (req, res) => {
             } else {
                 errorMessage += 'Please check your credentials and try again.';
             }
-            
+
             // For Gmail specific errors
             if (provider === 'gmail' && connectError.source === 'authentication') {
                 errorMessage += ' Note: For Gmail, you may need to: 1) Enable IMAP in Gmail settings, 2) Use an App Password if 2FA is enabled, 3) Allow less secure apps.';
             }
-            
+
             return res.status(400).json({
                 success: false,
                 message: errorMessage,
                 debug: process.env.NODE_ENV === 'development' ? connectError.message : undefined
             });
         }
-        
+
     } catch (error) {
         console.error('Error testing email connection:', error);
         res.status(500).json({
@@ -386,7 +401,7 @@ router.post('/connect', async (req, res) => {
     try {
         const userId = req.session.user.id;
         const { email, password, provider, syncInterval } = req.body;
-        
+
         // Validate input
         if (!email || !password) {
             return res.status(400).json({
@@ -394,10 +409,10 @@ router.post('/connect', async (req, res) => {
                 message: 'Email and password are required'
             });
         }
-        
+
         // Determine IMAP settings based on provider
         let host, port;
-        switch(provider) {
+        switch (provider) {
             case 'gmail':
                 host = 'imap.gmail.com';
                 port = 993;
@@ -416,12 +431,12 @@ router.post('/connect', async (req, res) => {
                     message: 'Invalid email provider'
                 });
         }
-        
+
         // For development: Accept self-signed certificates
         const tlsOptions = process.env.NODE_ENV === 'production' ? {} : {
             rejectUnauthorized: false
         };
-        
+
         // Test connection first
         const testService = new EmailService('test', {
             user: email,
@@ -433,7 +448,7 @@ router.post('/connect', async (req, res) => {
             authTimeout: 10000,
             connTimeout: 30000
         });
-        
+
         try {
             console.log(`Connecting ${email} to ${host}:${port}`);
             await testService.connect();
@@ -441,7 +456,7 @@ router.post('/connect', async (req, res) => {
             console.log('Connection test passed');
         } catch (connectError) {
             console.error('Connection test failed:', connectError.message);
-            
+
             let errorMessage = 'Failed to connect to email server. ';
             if (connectError.source === 'authentication') {
                 errorMessage += 'Authentication failed. Please check your credentials.';
@@ -461,7 +476,7 @@ router.post('/connect', async (req, res) => {
                 });
             }
         }
-        
+
         // Save email config to user session
         req.session.user.emailConfig = {
             email: email,
@@ -471,7 +486,7 @@ router.post('/connect', async (req, res) => {
             provider: provider,
             tlsOptions: tlsOptions
         };
-        
+
         // Save to database if you have a User model
         try {
             // If you have a User model, save the config there
@@ -483,7 +498,7 @@ router.post('/connect', async (req, res) => {
             console.error('Error saving email config to database:', dbError);
             // Continue anyway - config is in session
         }
-        
+
         // Start syncing with error handling
         try {
             const result = await emailScheduler.startSyncForUser(
@@ -491,7 +506,7 @@ router.post('/connect', async (req, res) => {
                 req.session.user.emailConfig,
                 parseInt(syncInterval) || 30
             );
-            
+
             if (result.success) {
                 res.json({
                     success: true,
@@ -507,7 +522,7 @@ router.post('/connect', async (req, res) => {
                 message: 'Connected to email server, but failed to start syncing. Please try again.'
             });
         }
-        
+
     } catch (error) {
         console.error('Error connecting email:', error);
         res.status(500).json({
@@ -521,7 +536,7 @@ router.post('/connect/mock', async (req, res) => {
     try {
         const userId = req.session.user.id;
         const { provider } = req.body;
-        
+
         // Save mock config
         req.session.user.emailConfig = {
             email: 'test@example.com',
@@ -531,7 +546,7 @@ router.post('/connect/mock', async (req, res) => {
             provider: provider || 'gmail',
             isMock: true
         };
-        
+
         // Create mock notifications for testing
         const mockEmails = [
             {
@@ -565,16 +580,16 @@ router.post('/connect/mock', async (req, res) => {
                 isRead: true
             }
         ];
-        
+
         // Save mock emails
         await EmailNotification.insertMany(mockEmails);
-        
+
         res.json({
             success: true,
             message: 'Mock email account connected successfully! You can now test email features with sample data.',
             isMock: true
         });
-        
+
     } catch (error) {
         console.error('Error connecting mock email:', error);
         res.status(500).json({
@@ -588,16 +603,16 @@ router.post('/mark-read', async (req, res) => {
     try {
         const userId = req.session.user.id;
         const { emailIds } = req.body;
-        
+
         if (!Array.isArray(emailIds) || emailIds.length === 0) {
             return res.status(400).json({
                 success: false,
                 message: 'No emails selected'
             });
         }
-        
+
         await EmailNotification.markAsRead(userId, emailIds);
-        
+
         res.json({
             success: true,
             message: 'Emails marked as read'
@@ -616,12 +631,12 @@ router.post('/archive/:id', async (req, res) => {
     try {
         const userId = req.session.user.id;
         const { id } = req.params;
-        
+
         await EmailNotification.findOneAndUpdate(
             { _id: id, userId },
             { isArchived: true, updatedAt: new Date() }
         );
-        
+
         res.json({
             success: true,
             message: 'Email archived'
@@ -640,19 +655,19 @@ router.get('/:id', async (req, res) => {
     try {
         const userId = req.session.user.id;
         const { id } = req.params;
-        
+
         const email = await EmailNotification.findOne({
             _id: id,
             userId
         }).lean();
-        
+
         if (!email) {
             return res.status(404).render('error', {
                 title: 'Not Found',
                 error: 'Email not found'
             });
         }
-        
+
         // Mark as read when viewing
         if (!email.isRead) {
             await EmailNotification.findOneAndUpdate(
@@ -660,7 +675,7 @@ router.get('/:id', async (req, res) => {
                 { isRead: true, updatedAt: new Date() }
             );
         }
-        
+
         res.render('email/view', {
             title: email.subject,
             activeTab: 'email',
@@ -680,7 +695,7 @@ router.get('/:id', async (req, res) => {
 router.get('/api/stats', async (req, res) => {
     try {
         const userId = req.session.user.id;
-        
+
         const [
             unreadCount,
             todayImportant,
@@ -693,7 +708,7 @@ router.get('/api/stats', async (req, res) => {
                 { $group: { _id: '$category', count: { $sum: 1 } } }
             ])
         ]);
-        
+
         res.json({
             success: true,
             stats: {
@@ -726,21 +741,21 @@ router.get('/api/stats', async (req, res) => {
 router.post('/bulk-delete', isAuthenticated, async (req, res) => {
     try {
         const { emailIds } = req.body;
-        
+
         if (!emailIds || !Array.isArray(emailIds) || emailIds.length === 0) {
             req.session.error = 'No emails selected for deletion';
             return res.redirect('/email');
         }
-        
+
         // Delete selected emails
         const result = await EmailNotification.deleteMany({
             userId: req.session.user._id,
             emailId: { $in: emailIds }
         });
-        
+
         req.session.success = `Successfully deleted ${result.deletedCount} email(s)`;
         res.redirect('/email');
-        
+
     } catch (error) {
         console.error('Bulk delete error:', error);
         req.session.error = 'Failed to delete emails';
