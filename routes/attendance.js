@@ -15,51 +15,40 @@ router.use(requireAuth);
 router.get('/', async (req, res) => {
     try {
         const userId = req.session.user.id;
-        console.log('Fetching attendance for user:', userId);
-        
-        // Use .lean() with transform option to include virtuals
-        const attendance = await Attendance.find({ userId: userId })
-            .lean({ virtuals: true });
-        
-        console.log('Found attendance records:', attendance.length);
-        
-        // Manually add percentage and status for each record
-        attendance.forEach(record => {
-            // Calculate percentage
-            const perc = record.totalClasses > 0 ? 
-                (record.attendedClasses / record.totalClasses) * 100 : 0;
-            record.percentage = Math.round(perc * 10) / 10;
-            
-            // Determine status
-            if (record.percentage >= 75) {
-                record.status = 'safe';
-            } else if (record.percentage >= 60) {
-                record.status = 'atRisk';
-            } else {
-                record.status = 'critical';
-            }
-            
-            console.log(`Record: ${record.subject} - ${record.attendedClasses}/${record.totalClasses} = ${record.percentage}%`);
+
+        // Find all records - virtuals are handled by the model
+        const attendance = await Attendance.find({ userId: userId });
+
+        // Calculate overall stats
+        let totalAttended = 0;
+        let totalTotal = 0;
+
+        attendance.forEach(a => {
+            totalAttended += a.attendedClasses;
+            totalTotal += a.totalClasses;
         });
-        
-        // Calculate stats
-        const totalSubjects = attendance.length;
-        const safeSubjects = attendance.filter(a => a.percentage >= 75).length;
-        const atRiskSubjects = attendance.filter(a => a.percentage >= 60 && a.percentage < 75).length;
-        const criticalSubjects = attendance.filter(a => a.percentage < 60).length;
-        
+
+        const overallPercentage = totalTotal > 0 ? (totalAttended / totalTotal) * 100 : 0;
+
+        const stats = {
+            totalSubjects: attendance.length,
+            overallPercentage: Math.round(overallPercentage * 10) / 10,
+            overallThreshold: 75,
+            safeSubjects: attendance.filter(a => a.status === 'safe').length,
+            atRiskSubjects: attendance.filter(a => a.status === 'atRisk').length,
+            criticalSubjects: attendance.filter(a => a.status === 'critical').length
+        };
+
         res.render('attendance/index', {
             title: 'Attendance Tracker',
+            activeTab: 'attendance',
             attendance,
-            totalSubjects,
-            safeSubjects,
-            atRiskSubjects,
-            criticalSubjects
+            stats
         });
-        
+
     } catch (err) {
         console.error('Error in attendance route:', err);
-        res.status(500).render('error', { 
+        res.status(500).render('error', {
             error: err.message,
             title: 'Error'
         });
@@ -69,76 +58,81 @@ router.get('/', async (req, res) => {
 // Add attendance record
 router.post('/add', async (req, res) => {
     try {
-        const { subject, totalClasses, attendedClasses } = req.body;
+        const { subject, totalClasses, attendedClasses, weeklyClassCount, threshold } = req.body;
         const userId = req.session.user.id;
-        
-        // Validate
-        if (!subject || !totalClasses || attendedClasses === undefined) {
-            return res.status(400).json({ error: 'All fields are required' });
+
+        if (!subject || totalClasses === undefined || attendedClasses === undefined) {
+            return res.status(400).json({ error: 'Subject and counts are required' });
         }
-        
-        const total = parseInt(totalClasses);
-        const attended = parseInt(attendedClasses);
-        
-        if (attended > total) {
-            return res.status(400).json({ error: 'Attended classes cannot be more than total classes' });
-        }
-        
-        // Create new attendance record
-        const attendance = new Attendance({
+
+        const record = new Attendance({
             userId,
             subject: subject.trim(),
-            totalClasses: total,
-            attendedClasses: attended
+            totalClasses: parseInt(totalClasses),
+            attendedClasses: parseInt(attendedClasses),
+            weeklyClassCount: parseInt(weeklyClassCount) || 4,
+            threshold: parseInt(threshold) || 75
         });
-        
-        await attendance.save();
-        console.log('Attendance saved:', attendance);
-        
+
+        await record.save();
         res.redirect('/attendance');
-        
+
     } catch (err) {
         console.error('Error adding attendance:', err);
         res.status(500).render('error', { error: err.message });
     }
 });
 
-// Update attendance (mark present/absent)
+// Update attendance action
 router.post('/update/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { action } = req.body;
         const userId = req.session.user.id;
-        
-        console.log('Update request:', { id, action, userId });
-        
-        // Find the attendance record
-        const attendance = await Attendance.findOne({ _id: id, userId: userId });
-        
-        if (!attendance) {
-            console.log('Attendance not found or unauthorized');
-            return res.redirect('/attendance');
-        }
-        
-        // Update based on action
+
+        const record = await Attendance.findOne({ _id: id, userId: userId });
+
+        if (!record) return res.redirect('/attendance');
+
         if (action === 'present') {
-            attendance.attendedClasses += 1;
-            attendance.totalClasses += 1;
+            record.attendedClasses += 1;
+            record.totalClasses += 1;
         } else if (action === 'absent') {
-            attendance.totalClasses += 1;
-            // attendedClasses remains the same
-        } else {
-            return res.status(400).redirect('/attendance');
+            record.totalClasses += 1;
         }
-        
-        await attendance.save();
-        console.log('Attendance updated:', attendance);
-        
+
+        await record.save();
         res.redirect('/attendance');
-        
+
     } catch (error) {
         console.error('Error updating attendance:', error);
         res.redirect('/attendance');
+    }
+});
+
+// Risk Analysis Endpoint
+router.get('/risk', async (req, res) => {
+    try {
+        const attendance = await Attendance.find({ userId: req.session.user.id });
+        const risks = attendance.map(a => {
+            // Predict for next 4 weeks
+            const projectedTotal = a.totalClasses + (4 * a.weeklyClassCount);
+            const neededToMaintain = Math.ceil((a.threshold / 100) * projectedTotal);
+            const canMiss = Math.max(0, (projectedTotal - neededToMaintain) - (a.totalClasses - a.attendedClasses));
+
+            return {
+                subject: a.subject,
+                percentage: a.percentage,
+                threshold: a.threshold,
+                status: a.status,
+                canMissNext: canMiss,
+                classesNeeded: a.classesNeeded
+            };
+        });
+
+        res.json(risks);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -147,11 +141,11 @@ router.post('/delete/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const userId = req.session.user.id;
-        
+
         await Attendance.findOneAndDelete({ _id: id, userId: userId });
-        
+
         res.redirect('/attendance');
-        
+
     } catch (error) {
         console.error('Error deleting attendance:', error);
         res.redirect('/attendance');

@@ -1,0 +1,121 @@
+<div class="container py-5">
+    <div class="row">
+        <!-- Profile Sidebar -->
+        <div class="col-lg-4">
+            <div class="card card-premium mb-4">
+                <div class="card-body text-center p-4">
+                    <div class="position-relative d-inline-block mb-3">
+                        <div class="avatar-lg bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto"
+                            style="width: 120px; height: 120px; font-size: 3rem;">
+                            {{#if user.profilePicture}}
+                            <img src="{{user.profilePicture}}" alt="Avatar"
+                                class="rounded-circle w-100 h-100 object-fit-cover shadow-sm">
+                            {{else}}
+                            {{substring user.username 0 1}}
+                            {{/if}}
+                        </div>
+                    </div>
+                    <h4 class="fw-bold mb-1">{{#if user.fullName}}{{user.fullName}}{{else}}{{user.username}}{{/if}}</h4>
+                    <p class="text-muted small mb-3">@{{user.username}}</p>
+                    <p class="mb-4 text-muted small px-3">
+                        {{#if user.bio}}{{user.bio}}{{else}}Student at {{user.college}}{{/if}}
+                    </p>
+                    <div class="d-flex justify-content-center gap-2 mb-2">
+                        <div class="bg-light rounded-3 px-3 py-2 flex-grow-1">
+                            <h6 class="mb-0 fw-bold">{{user.semester}}</h6>
+                            <small class="text-muted tiny text-uppercase fw-bold">Semester</small>
+                        </div>
+                        <div class="bg-light rounded-3 px-3 py-2 flex-grow-1">
+                            <h6 class="mb-0 fw-bold">{{percentageRound 75}}%</h6>
+                            <small class="text-muted tiny text-uppercase fw-bold">Attendance</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-premium bg-primary text-white p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>Status</h6>
+                <div class="mb-3">
+                    <label class="small opacity-75 d-block">Education</label>
+                    <div class="fw-bold">{{user.college}}</div>
+                </div>
+                <div>
+                    <label class="small opacity-75 d-block">Current Major</label>
+                    <div class="fw-bold">Computer Science</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Settings Area -->
+        <div class="col-lg-8">
+            <div class="card card-premium">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">Public Profile</h5>
+                    <a href="/settings" class="btn btn-light btn-sm rounded-pill"><i class="bi bi-gear me-1"></i>Edit
+                        Settings</a>
+                </div>
+                <div class="card-body">
+                    <form action="/profile/update" method="POST">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Full Name</label>
+                                <input type="text" class="form-control rounded-3" name="fullName"
+                                    value="{{user.fullName}}" placeholder="Enter your full name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Email Address (Read Only)</label>
+                                <input type="email" class="form-control rounded-3 bg-light" value="{{user.email}}"
+                                    readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">College/University</label>
+                                <input type="text" class="form-control rounded-3" name="college"
+                                    value="{{user.college}}" placeholder="Your institution name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Current Semester</label>
+                                <input type="number" class="form-control rounded-3" name="semester"
+                                    value="{{user.semester}}" min="1" max="8">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-muted">Profile Picture URL</label>
+                                <input type="url" class="form-control rounded-3" name="profilePicture"
+                                    value="{{user.profilePicture}}" placeholder="https://example.com/photo.jpg">
+                                <div class="form-text">Direct link to an image.</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-muted">Bio</label>
+                                <textarea class="form-control rounded-3" name="bio" rows="4"
+                                    placeholder="Tell us something about yourself...">{{user.bio}}</textarea>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">Save
+                                Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .object-fit-cover {
+        object-fit: cover;
+    }
+
+    .tiny {
+        font-size: 0.65rem;
+    }
+
+    .avatar-lg {
+        border: 4px solid #fff;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease;
+    }
+
+    .avatar-lg:hover {
+        transform: scale(1.05);
+    }
+</style>

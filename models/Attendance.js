@@ -20,23 +20,44 @@ const attendanceSchema = new mongoose.Schema({
         type: Number,
         default: 0,
         min: 0
+    },
+    weeklyClassCount: {
+        type: Number,
+        default: 4,
+        min: 1
+    },
+    threshold: {
+        type: Number,
+        default: 75,
+        min: 0,
+        max: 100
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
-// Virtual for percentage (calculated on the fly)
-attendanceSchema.virtual('percentage').get(function() {
+// Virtual for percentage
+attendanceSchema.virtual('percentage').get(function () {
     if (this.totalClasses === 0) return 0;
-    const perc = (this.attendedClasses / this.totalClasses) * 100;
-    return Math.round(perc * 10) / 10; // One decimal place
+    return Math.round((this.attendedClasses / this.totalClasses) * 1000) / 10;
+});
+
+// Virtual for classes needed to reach threshold
+// needed = ceil((threshold/100 * totalClasses - attendedClasses) / (1 - threshold/100))
+attendanceSchema.virtual('classesNeeded').get(function () {
+    const p = this.threshold / 100;
+    if (this.percentage >= this.threshold) return 0;
+    const needed = Math.ceil((p * this.totalClasses - this.attendedClasses) / (1 - p));
+    return needed > 0 ? needed : 0;
 });
 
 // Virtual for status
-attendanceSchema.virtual('status').get(function() {
+attendanceSchema.virtual('status').get(function () {
     const perc = this.percentage;
-    if (perc >= 75) return 'safe';
-    if (perc >= 60) return 'atRisk';
+    if (perc >= this.threshold) return 'safe';
+    if (perc >= this.threshold - 10) return 'atRisk';
     return 'critical';
 });
 

@@ -15,12 +15,12 @@ const PORT = process.env.PORT || 3000;
 
 // Import routes
 const authRoutes = require('./routes/auth');
-const dashboardRoutes = require('./routes/dashboard'); // UNCOMMENT THIS LINE
+const dashboardRoutes = require('./routes/dashboard');
 const attendanceRoutes = require('./routes/attendance');
-const notesRoutes = require('./routes/notes');
-const remindersRoutes = require('./routes/reminders');
 const progressRoutes = require('./routes/progress');
 const todoRoutes = require('./routes/todos');
+const notesRoutes = require('./routes/notes');
+const remindersRoutes = require('./routes/reminders');
 const emailRoutes = require('./routes/email');
 
 // ==================== ADD THIS MIDDLEWARE ====================
@@ -80,6 +80,8 @@ const hbs = exphbs.create({
         neq: (a, b) => a !== b,
         gte: (a, b) => a >= b,
         lte: (a, b) => a <= b,
+        substring: (str, start, len) => str ? str.substring(start, len) : '',
+        percentageRound: (val) => Math.round(val || 0),
 
         // Format helpers
         formatDate: (date) => {
@@ -245,6 +247,19 @@ const hbs = exphbs.create({
             if (interval >= 1) return interval + ' minute' + (interval > 1 ? 's' : '') + ' ago';
 
             return 'Just now';
+        },
+
+        progressBar: (val) => {
+            const perc = Math.round(val || 0);
+            let color = 'bg-primary';
+            if (perc < 60) color = 'bg-danger';
+            else if (perc < 75) color = 'bg-warning';
+
+            return new handlebars.SafeString(`
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar ${color}" role="progressbar" style="width: ${perc}%"></div>
+                </div>
+            `);
         },
 
         formatPercentage: (percentage) => {
@@ -704,7 +719,6 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/', authRoutes);
-// Note: dashboardRoutes is already mounted above with authentication
 app.use('/attendance', isAuthenticated, attendanceRoutes);
 app.use('/dashboard', isAuthenticated, dashboardRoutes);
 app.use('/notes', isAuthenticated, notesRoutes);

@@ -89,6 +89,15 @@ const progressTrackerSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    // New fields for student skill/progress
+    assignmentsCompleted: { type: Number, default: 0 },
+    totalAssignments: { type: Number, default: 0 },
+    currentMarks: { type: Number, default: 0 },
+    totalPossibleMarks: { type: Number, default: 0 },
+    learningHoursGoal: { type: Number, default: 0 },
+    learningHoursSpent: { type: Number, default: 0 },
+    topicsCovered: [String],
+    skillLevel: { type: Number, default: 0, min: 0, max: 100 }, // 0 to 100%
     createdAt: {
         type: Date,
         default: Date.now

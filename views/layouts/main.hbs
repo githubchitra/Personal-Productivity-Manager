@@ -12,72 +12,71 @@
 
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="/dashboard">
-                <i class="bi bi-journal-check"></i> College Helper
+            <a class="navbar-brand fw-bold" href="/dashboard">
+                <i class="bi bi-mortarboard-fill me-2"></i>Antigravity Portal
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-center">
                     {{#if user}}
                     <li class="nav-item">
-                        <a class="nav-link" href="/dashboard">
-                            <i class="bi bi-speedometer2"></i> Dashboard
+                        <a class="nav-link {{#if (eq activeTab 'dashboard')}}active{{/if}}" href="/dashboard">
+                            Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/attendance">
-                            <i class="bi bi-calendar-check"></i> Attendance
+                        <a class="nav-link {{#if (eq activeTab 'attendance')}}active{{/if}}" href="/attendance">
+                            Attendance
                         </a>
                     </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link {{#if (eq activeTab 'notes')}}active{{/if}}" href="/notes">
-                            <i class="bi bi-journal-text"></i> Notes
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                            data-bs-toggle="dropdown">
+                            Trackers
                         </a>
+                        <ul class="dropdown-menu border-0 shadow-sm">
+                            <li><a class="dropdown-item" href="/notes"><i class="bi bi-journal-text me-2"></i>Notes</a>
+                            </li>
+                            <li><a class="dropdown-item" href="/reminders"><i class="bi bi-alarm me-2"></i>Reminders</a>
+                            </li>
+                            <li><a class="dropdown-item" href="/progress"><i class="bi bi-graph-up me-2"></i>Academic
+                                    Progress</a></li>
+                            <li><a class="dropdown-item" href="/todos"><i class="bi bi-check2-square me-2"></i>To-Do
+                                    List</a></li>
+                        </ul>
                     </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link {{#if (eq activeTab 'reminders')}}active{{/if}}" href="/reminders">
-                            <i class="bi bi-alarm"></i> Reminders
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="/progress">
-                            <i class="bi bi-graph-up"></i> Progress
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="/todos">
-                            <i class="bi bi-check2-square"></i> To-Do
-                        </a>
-                    </li>
-
                     <li class="nav-item">
                         <a class="nav-link {{#if (eq activeTab 'email')}}active{{/if}}" href="/email">
-                            <i class="bi bi-envelope me-1"></i> Email Alerts
+                            Email Alerts
                             {{#if emailNotificationCount}}
-                            <span class="badge bg-danger unread-count">{{emailNotificationCount}}</span>
+                            <span class="badge bg-danger rounded-pill">{{emailNotificationCount}}</span>
                             {{/if}}
                         </a>
                     </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="/logout">
-                            <i class="bi bi-box-arrow-right"></i> Logout
+                    <li class="nav-item dropdown ms-lg-3">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
+                            role="button" data-bs-toggle="dropdown">
+                            <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center me-2 shadow-sm"
+                                style="width: 32px; height: 32px; font-weight: bold;">
+                                {{substring user.username 0 1}}
+                            </div>
+                            <span>{{user.username}}</span>
                         </a>
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm mt-2">
+                            <li><a class="dropdown-item text-danger" href="/logout"><i
+                                        class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        </ul>
                     </li>
                     {{else}}
                     <li class="nav-item">
-                        <a class="nav-link" href="/login">Login</a>
+                        <a class="btn btn-outline-light btn-sm me-2 rounded-pill px-3" href="/login">Login</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/register">Register</a>
+                        <a class="btn btn-light btn-sm rounded-pill px-3 text-primary" href="/register">Register</a>
                     </li>
                     {{/if}}
                 </ul>
@@ -102,16 +101,64 @@
         {{/if}}
 
         {{#block "content"}}
-            {{{body}}}
+        {{{body}}}
         {{/block}}
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-light mt-5 py-3">
-        <div class="container text-center">
-            <p class="mb-0">© 2024 College Helper Portal. All rights reserved.</p>
+    {{#if user}}
+    <!-- Quick Add Floating Button -->
+    <button class="floating-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#quickAddOffcanvas">
+        <i class="bi bi-plus-lg"></i>
+    </button>
+
+    <!-- Quick Add Offcanvas -->
+    <div class="offcanvas offcanvas-end border-0 shadow" tabindex="-1" id="quickAddOffcanvas">
+        <div class="offcanvas-header bg-primary text-white">
+            <h5 class="offcanvas-title fw-bold"><i class="bi bi-lightning-charge-fill me-2"></i>Quick Actions</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
-    </footer>
+        <div class="offcanvas-body">
+            <div class="list-group list-group-flush">
+                <a href="/todos" class="list-group-item list-group-item-action py-3 border-0">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary text-white rounded-3 p-2 me-3"><i class="bi bi-check2-square"></i></div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Add Task</h6>
+                            <small class="text-muted">Create a new to-do item</small>
+                        </div>
+                    </div>
+                </a>
+                <a href="/notes" class="list-group-item list-group-item-action py-3 border-0">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-success text-white rounded-3 p-2 me-3"><i class="bi bi-journal-text"></i></div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">New Note</h6>
+                            <small class="text-muted">Jot down quick thoughts</small>
+                        </div>
+                    </div>
+                </a>
+                <a href="/reminders" class="list-group-item list-group-item-action py-3 border-0">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-warning text-dark rounded-3 p-2 me-3"><i class="bi bi-alarm"></i></div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Set Reminder</h6>
+                            <small class="text-muted">Don't miss deadlines</small>
+                        </div>
+                    </div>
+                </a>
+                <a href="/attendance" class="list-group-item list-group-item-action py-3 border-0">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-info text-white rounded-3 p-2 me-3"><i class="bi bi-calendar-check"></i></div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Mark Attendance</h6>
+                            <small class="text-muted">Update subject counts</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+    {{/if}}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/main.js"></script>

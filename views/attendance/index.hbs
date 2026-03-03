@@ -1,110 +1,124 @@
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-12 mb-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1><i class="bi bi-calendar-check"></i> Attendance Tracker</h1>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
-                    <i class="bi bi-plus-circle"></i> Add Subject
-                </button>
-            </div>
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-lg-8">
+            <h1 class="fw-bold mb-1"><i class="bi bi-calendar-check-fill text-primary me-2"></i>Attendance Tracker</h1>
+            <p class="text-muted">Manage your subject-wise attendance and stay above the {{stats.overallThreshold}}%
+                threshold.</p>
         </div>
+        <div class="col-lg-4 text-lg-end">
+            <button class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm" data-bs-toggle="modal"
+                data-bs-target="#addSubjectModal">
+                <i class="bi bi-plus-lg me-2"></i>Add New Subject
+            </button>
+        </div>
+    </div>
 
-        <!-- Summary Cards -->
-        <div class="col-md-3 mb-4">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h1 class="display-4">{{safeSubjects}}</h1>
-                    <p class="card-text">Safe Subjects (≥75%)</p>
+    <!-- Stats Row -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card card-premium text-center p-4">
+                <div class="d-flex justify-content-center mb-3">
+                    <div class="rounded-circle bg-light p-3">
+                        <i class="bi bi-percent fs-3 text-primary"></i>
+                    </div>
                 </div>
+                <h2 class="fw-bold mb-0">{{stats.overallPercentage}}%</h2>
+                <p class="text-muted mb-0 small uppercase fw-bold tracking-wider">Overall Attendance</p>
             </div>
         </div>
-        <div class="col-md-3 mb-4">
-            <div class="card bg-warning text-white">
-                <div class="card-body text-center">
-                    <h1 class="display-4">{{atRiskSubjects}}</h1>
-                    <p class="card-text">At Risk (60-75%)</p>
-                </div>
+        <div class="col-md-3">
+            <div class="card card-premium text-center p-4 border-bottom border-success border-5">
+                <h2 class="fw-bold mb-0">{{stats.safeSubjects}}</h2>
+                <p class="text-muted mb-0 small">Safe Subjects</p>
             </div>
         </div>
-        <div class="col-md-3 mb-4">
-            <div class="card bg-danger text-white">
-                <div class="card-body text-center">
-                    <h1 class="display-4">{{criticalSubjects}}</h1>
-                    <p class="card-text">Critical (<60%)</p>
-                </div>
+        <div class="col-md-3">
+            <div class="card card-premium text-center p-4 border-bottom border-warning border-5">
+                <h2 class="fw-bold mb-0">{{stats.atRiskSubjects}}</h2>
+                <p class="text-muted mb-0 small">At Risk</p>
             </div>
         </div>
-        <div class="col-md-3 mb-4">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <h1 class="display-4">{{totalSubjects}}</h1>
-                    <p class="card-text">Total Subjects</p>
-                </div>
+        <div class="col-md-3">
+            <div class="card card-premium text-center p-4 border-bottom border-danger border-5">
+                <h2 class="fw-bold mb-0">{{stats.criticalSubjects}}</h2>
+                <p class="text-muted mb-0 small">Critical Action Needed</p>
             </div>
         </div>
+    </div>
 
-        <!-- Attendance Table -->
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Subject-wise Attendance</h5>
+    <div class="row g-4">
+        <!-- Main Table -->
+        <div class="col-xl-8">
+            <div class="card card-premium h-100">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="fw-bold mb-0">Subject Breakdown</h5>
                 </div>
-                <div class="card-body">
-                    {{#if attendance.length}}
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light text-muted small uppercase">
                                 <tr>
-                                    <th>Subject</th>
-                                    <th>Attended</th>
-                                    <th>Total</th>
-                                    <th>Percentage</th>
+                                    <th class="ps-4 py-3">Subject</th>
+                                    <th>Progress</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
+                                    <th>Requirement</th>
+                                    <th class="pe-4">Quick Mark</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {{#each attendance}}
                                 <tr>
-                                    <td>{{this.subject}}</td>
-                                    <td>{{this.attendedClasses}}</td>
-                                    <td>{{this.totalClasses}}</td>
-                                    <td>
-                                        {{progressBar this.percentage}}
-                                        <small class="text-muted">{{formatPercentage this.percentage}}%</small>
+                                    <td class="ps-4">
+                                        <div class="fw-bold">{{this.subject}}</div>
+                                        <small class="text-muted">{{this.attendedClasses}} of {{this.totalClasses}}
+                                            classes</small>
+                                    </td>
+                                    <td style="min-width: 150px;">
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                                <div class="progress-bar {{#if (eq this.status 'safe')}}bg-primary{{else if (eq this.status 'atRisk')}}bg-warning{{else}}bg-danger{{/if}}"
+                                                    style="width: {{this.percentage}}%"></div>
+                                            </div>
+                                            <span class="small fw-bold">{{this.percentage}}%</span>
+                                        </div>
                                     </td>
                                     <td>
-                                        {{#if (gt this.percentage 74)}}
-                                        <span class="badge bg-success">Safe</span>
-                                        {{else if (gt this.percentage 59)}}
-                                        <span class="badge bg-warning">At Risk</span>
+                                        <span
+                                            class="badge rounded-pill {{#if (eq this.status 'safe')}}bg-success{{else if (eq this.status 'atRisk')}}bg-warning text-dark{{else}}bg-danger{{/if}}">
+                                            {{this.status}}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {{#if (gt this.classesNeeded 0)}}
+                                        <span class="text-danger small fw-bold"><i
+                                                class="bi bi-exclamation-triangle-fill"></i> Attend next
+                                            {{this.classesNeeded}} classes</span>
                                         {{else}}
-                                        <span class="badge bg-danger">Critical</span>
+                                        <span class="text-success small fw-bold"><i class="bi bi-check-circle-fill"></i>
+                                            On track</span>
                                         {{/if}}
                                     </td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <!-- Present Button -->
+                                    <td class="pe-4">
+                                        <div class="btn-group shadow-sm">
                                             <form action="/attendance/update/{{this._id}}" method="POST">
                                                 <input type="hidden" name="action" value="present">
-                                                <button type="submit" class="btn btn-success btn-sm me-1">
-                                                    <i class="bi bi-check-circle"></i> Present
+                                                <button type="submit" class="btn btn-sm btn-white border-end"
+                                                    title="Mark Present">
+                                                    <i class="bi bi-check text-success fs-5"></i>
                                                 </button>
                                             </form>
-
-                                            <!-- Absent Button -->
                                             <form action="/attendance/update/{{this._id}}" method="POST">
                                                 <input type="hidden" name="action" value="absent">
-                                                <button type="submit" class="btn btn-danger btn-sm me-1">
-                                                    <i class="bi bi-x-circle"></i> Absent
+                                                <button type="submit" class="btn btn-sm btn-white border-end"
+                                                    title="Mark Absent">
+                                                    <i class="bi bi-x text-danger fs-5"></i>
                                                 </button>
                                             </form>
-                                            
-                                            <!-- Delete Button -->
-                                            <form action="/attendance/delete/{{this._id}}" method="POST" 
-                                                  onsubmit="return confirm('Are you sure you want to delete this subject?');">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm">
-                                                    <i class="bi bi-trash"></i>
+                                            <form action="/attendance/delete/{{this._id}}" method="POST">
+                                                <button type="submit" class="btn btn-sm btn-white text-muted"
+                                                    onclick="return confirm('Delete this subject?')">
+                                                    <i class="bi bi-trash fs-6"></i>
                                                 </button>
                                             </form>
                                         </div>
@@ -114,133 +128,150 @@
                             </tbody>
                         </table>
                     </div>
-                    {{else}}
-                    <div class="text-center py-5">
-                        <i class="bi bi-calendar-x display-1 text-muted"></i>
-                        <h4 class="mt-3">No attendance records found</h4>
-                        <p class="text-muted">Add your first subject to start tracking attendance</p>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
-                            <i class="bi bi-plus-circle"></i> Add Your First Subject
-                        </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Predictor Sidebar -->
+        <div class="col-xl-4">
+            <div class="card card-premium">
+                <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">Risk Predictor</h5>
+                    <span class="badge bg-light text-dark fw-normal">4-Week Projection</span>
+                </div>
+                <div class="card-body pt-0">
+                    <div id="riskContainer">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                            <p class="small text-muted mt-2">Analyzing attendance patterns...</p>
+                        </div>
                     </div>
-                    {{/if}}
+                </div>
+            </div>
+
+            <!-- Management Card -->
+            <div class="card card-premium mt-4 bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Global Settings</h6>
+                    <div class="mb-3">
+                        <label class="small opacity-75 d-block">Required Threshold</label>
+                        <div class="h3 fw-bold">75%</div>
+                    </div>
+                    <button class="btn btn-light btn-sm w-100 rounded-pill fw-bold text-primary">Edit Settings</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Add Subject Modal -->
+<!-- Modal -->
 <div class="modal fade" id="addSubjectModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Subject</h5>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="fw-bold">Add New Subject</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form action="/attendance/add" method="POST">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="subject" class="form-label">Subject Name</label>
-                        <input type="text" class="form-control" id="subject" name="subject" required 
-                               placeholder="e.g., Mathematics, Physics">
+                        <label class="form-label small fw-bold">Subject Title</label>
+                        <input type="text" class="form-control rounded-3" name="subject" required
+                            placeholder="e.g. Data Structures">
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="totalClasses" class="form-label">Total Classes Held</label>
-                            <input type="number" class="form-control" id="totalClasses" name="totalClasses" 
-                                   min="0" required value="0">
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Total Sessions</label>
+                            <input type="number" class="form-control rounded-3" name="totalClasses" min="0" value="0"
+                                required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="attendedClasses" class="form-label">Classes Attended</label>
-                            <input type="number" class="form-control" id="attendedClasses" name="attendedClasses"
-                                   min="0" required value="0">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Attended Sessions</label>
+                            <input type="number" class="form-control rounded-3" name="attendedClasses" min="0" value="0"
+                                required>
                         </div>
                     </div>
-                    <div class="alert alert-info">
-                        <small>
-                            <i class="bi bi-info-circle"></i> 
-                            After adding, you can update attendance daily using the Present/Absent buttons.
-                        </small>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Weekly Classes</label>
+                            <input type="number" class="form-control rounded-3" name="weeklyClassCount" min="1"
+                                value="4" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Threshold (%)</label>
+                            <input type="number" class="form-control rounded-3" name="threshold" min="0" max="100"
+                                value="75" required>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Add Subject</button>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill py-2">Create Tracker</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Success/Error Messages -->
-{{#if success}}
-<div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
-    <div class="toast show" role="alert">
-        <div class="toast-header bg-success text-white">
-            <strong class="me-auto">Success</strong>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-        </div>
-        <div class="toast-body">
-            {{success}}
-        </div>
-    </div>
-</div>
-{{/if}}
-
-{{#if error}}
-<div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
-    <div class="toast show" role="alert">
-        <div class="toast-header bg-danger text-white">
-            <strong class="me-auto">Error</strong>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-        </div>
-        <div class="toast-body">
-            {{error}}
-        </div>
-    </div>
-</div>
-{{/if}}
-
-<style>
-    .progress {
-        border-radius: 10px;
-        overflow: hidden;
-        margin-bottom: 5px;
-    }
-    .progress-bar {
-        transition: width 0.5s ease;
-        font-weight: bold;
-    }
-    .btn-group form {
-        display: inline-block;
-    }
-</style>
-
 <script>
-    // Auto-close toasts after 5 seconds
-    document.addEventListener('DOMContentLoaded', function() {
-        const toasts = document.querySelectorAll('.toast');
-        toasts.forEach(toast => {
-            setTimeout(() => {
-                const bsToast = bootstrap.Toast.getOrCreateInstance(toast);
-                bsToast.hide();
-            }, 5000);
-        });
-        
-        // Form validation for add subject
-        const addForm = document.querySelector('form[action="/attendance/add"]');
-        if (addForm) {
-            addForm.addEventListener('submit', function(e) {
-                const total = parseInt(document.getElementById('totalClasses').value);
-                const attended = parseInt(document.getElementById('attendedClasses').value);
-                
-                if (attended > total) {
-                    e.preventDefault();
-                    alert('Attended classes cannot be more than total classes');
-                    return false;
+    document.addEventListener('DOMContentLoaded', function () {
+        // Risk analysis fetch
+        fetch('/attendance/risk')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('riskContainer');
+                if (!data.length) {
+                    container.innerHTML = '<p class="text-center text-muted py-4">Add subjects to see risk analysis</p>';
+                    return;
                 }
+
+                container.innerHTML = data.map(risk => `
+                <div class="py-3 border-bottom last-child-noborder">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold">${risk.subject}</span>
+                        <span class="badge ${risk.canMissNext > 0 ? 'bg-success-light text-success' : 'bg-danger-light text-danger'} rounded-pill px-2">
+                            ${risk.canMissNext > 0 ? 'Safe' : 'Critical'}
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="progress flex-grow-1 me-2" style="height: 4px;">
+                            <div class="progress-bar ${risk.canMissNext > 0 ? 'bg-success' : 'bg-danger'}" style="width: ${risk.percentage}%"></div>
+                        </div>
+                    </div>
+                    <p class="small text-muted mt-2 mb-0">
+                        ${risk.canMissNext > 0
+                        ? `<i class="bi bi-check2-circle text-success"></i> You can miss <strong>${risk.canMissNext}</strong> more classes in next 4 weeks.`
+                        : `<i class="bi bi-exclamation-circle text-danger"></i> <strong>Must attend</strong> all upcoming classes to recover.`}
+                    </p>
+                </div>
+            `).join('');
             });
-        }
     });
 </script>
+
+<style>
+    .bg-success-light {
+        background-color: rgba(25, 135, 84, 0.1);
+    }
+
+    .bg-danger-light {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+
+    .last-child-noborder:last-child {
+        border-bottom: none !important;
+    }
+
+    .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .btn-white {
+        background: #fff;
+        color: #444;
+    }
+
+    .btn-white:hover {
+        background: #f8f9fa;
+    }
+</style>
