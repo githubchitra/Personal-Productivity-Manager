@@ -1,7 +1,7 @@
 {
-  "name": "college-portal",
+  "name": "personal-productivity-manager",
   "version": "1.0.0",
-  "description": "Unified College Helper Portal",
+  "description": "Personal Productivity Manager for Students",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",

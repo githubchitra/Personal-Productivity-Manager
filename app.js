@@ -767,7 +767,7 @@ app.get('/', (req, res) => {
     console.log('User is not logged in, showing home page');
     // Otherwise, show the homepage/login
     res.render('home', {
-        title: 'College Portal',
+        title: 'Productivity Manager',
         layout: 'main'
     });
 });
