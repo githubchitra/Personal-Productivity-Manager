@@ -53,16 +53,17 @@ attendanceSchema.virtual('classesNeeded').get(function () {
     return needed > 0 ? needed : 0;
 });
 
-// Virtual for status
-attendanceSchema.virtual('status').get(function () {
-    const perc = this.percentage;
-    if (perc >= this.threshold) return 'safe';
-    if (perc >= this.threshold - 10) return 'atRisk';
-    return 'critical';
-});
+// Method to calculate safe bunkable classes
+attendanceSchema.methods.safeBunks = function () {
+    const p = this.threshold / 100;
+    if (this.percentage < this.threshold) return 0;
+    // safeBunks = floor((attendedClasses - p * totalClasses) / p)
+    const bunks = Math.floor((this.attendedClasses - p * this.totalClasses) / p);
+    return bunks > 0 ? bunks : 0;
+};
 
-// Enable virtuals in toJSON and toObject
-attendanceSchema.set('toJSON', { virtuals: true });
-attendanceSchema.set('toObject', { virtuals: true });
+// Indexes
+attendanceSchema.index({ userId: 1, subject: 1 });
+attendanceSchema.index({ userId: 1, totalClasses: -1 });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);

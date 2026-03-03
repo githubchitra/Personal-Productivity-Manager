@@ -35,4 +35,8 @@ const noteSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Indexes
+noteSchema.index({ userId: 1, subject: 1 });
+noteSchema.index({ userId: 1, uploadDate: -1 });
+
 module.exports = mongoose.model('Note', noteSchema);

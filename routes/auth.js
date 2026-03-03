@@ -2,16 +2,18 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
-
+const { body, validationResult } = require('express-validator');
+const constants = require('../config/constants');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const { isNotAuthenticated } = require('../middlewares/auth');
 
 
 // Configure Passport Google Strategy
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/auth/google/callback",
+    clientID: constants.GOOGLE.CLIENT_ID,
+    clientSecret: constants.GOOGLE.CLIENT_SECRET,
+    callbackURL: constants.GOOGLE.REDIRECT_URI,
     userProfileURL: 'https://www.googleapis.com/oauth2/v3/userinfo'
 },
     async (accessToken, refreshToken, profile, done) => {
@@ -81,9 +83,22 @@ router.get('/', (req, res) => {
 });
 
 // Login page
-router.get('/login', (req, res) => {
+router.get('/login', isNotAuthenticated, (req, res) => {
     res.render('auth/login', { title: 'Login' });
 });
+
+// Registration Validation Rules
+const registerValidation = [
+    body('username').trim().isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
+    body('email').isEmail().withMessage('Enter a valid email address').normalizeEmail(),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('confirmPassword').custom((value, { req }) => {
+        if (value !== req.body.password) {
+            throw new Error('Password confirmation does not match password');
+        }
+        return true;
+    })
+];
 
 // In auth.js - Update the login success part
 router.post('/login', async (req, res) => {
@@ -154,11 +169,19 @@ router.get('/register', (req, res) => {
 });
 
 // Register handle
-router.post('/register', async (req, res) => {
+router.post('/register', isNotAuthenticated, registerValidation, async (req, res) => {
     try {
-        const { username, email, password, confirmPassword, college, semester } = req.body;
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.render('auth/register', {
+                error: errors.array()[0].msg,
+                title: 'Register',
+                ...req.body
+            });
+        }
 
-        console.log('Registration attempt for:', username, email); // Debug
+        const { username, email, password, college, semester } = req.body;
+        console.log('Registration attempt for:', username, email);
 
         // Check required fields
         if (!username || !email || !password) {

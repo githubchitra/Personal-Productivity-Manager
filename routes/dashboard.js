@@ -6,7 +6,7 @@ const Progress = require('../models/Progress');
 const Todo = require('../models/Todo');
 const Note = require('../models/Note');
 const EmailNotification = require('../models/EmailNotification');
- 
+
 // Helper function to get email notifications
 async function getEmailNotifications(userId) {
     try {
@@ -16,21 +16,21 @@ async function getEmailNotifications(userId) {
             isRead: false,
             isArchived: false
         });
-        
+
         // Get today's important emails
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         const todayImportant = await EmailNotification.find({
             userId,
             date: { $gte: today },
             category: { $in: ['job', 'internship', 'hackathon', 'college'] },
             isArchived: false
         })
-        .sort({ priority: -1, date: -1 })
-        .limit(10)
-        .lean();
-        
+            .sort({ priority: -1, date: -1 })
+            .limit(10)
+            .lean();
+
         // Format email data for template
         const formattedEmails = todayImportant.map(email => ({
             id: email._id.toString(),
@@ -42,21 +42,21 @@ async function getEmailNotifications(userId) {
             snippet: email.snippet || '',
             isRead: email.isRead || false,
             // Helper properties for template
-            categoryColor: email.category === 'job' ? 'primary' : 
-                         email.category === 'internship' ? 'info' :
-                         email.category === 'hackathon' ? 'success' : 'warning',
+            categoryColor: email.category === 'job' ? 'primary' :
+                email.category === 'internship' ? 'info' :
+                    email.category === 'hackathon' ? 'success' : 'warning',
             categoryIcon: email.category === 'job' ? 'briefcase' :
-                        email.category === 'internship' ? 'person-workspace' :
-                        email.category === 'hackathon' ? 'code-slash' : 'building',
+                email.category === 'internship' ? 'person-workspace' :
+                    email.category === 'hackathon' ? 'code-slash' : 'building',
             priorityColor: email.priority === 'critical' ? 'danger' :
-                         email.priority === 'high' ? 'warning' :
-                         email.priority === 'medium' ? 'info' : 'secondary',
+                email.priority === 'high' ? 'warning' :
+                    email.priority === 'medium' ? 'info' : 'secondary',
             formattedDate: email.date ? new Date(email.date).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric'
             }) : ''
         }));
-        
+
         return {
             stats: { unread: unreadCount },
             todayImportant: formattedEmails
@@ -74,87 +74,82 @@ async function getEmailNotifications(userId) {
 router.get('/', async (req, res) => {
     try {
         const userId = req.session.user._id || req.session.user.id;
-        
-        // Get email notifications in parallel with other data
-        const emailStatsPromise = getEmailNotifications(userId);
-        
-        // Get attendance summary
-        const attendance = await Attendance.find({ userId });
+
+        // Fetch data in parallel for better performance
+        const [
+            emailStats,
+            attendance,
+            upcomingReminders,
+            dsaProgress,
+            todos,
+            allNotes,
+            allReminders,
+            recentCompleted,
+            upcomingTasks
+        ] = await Promise.all([
+            getEmailNotifications(userId),
+            Attendance.find({ userId }),
+            Reminder.find({ userId, dueDate: { $gte: new Date() }, status: 'pending' }).sort({ dueDate: 1 }).limit(5),
+            Progress.findOne({ userId, category: 'dsa', topic: 'DSA Overall' }),
+            Todo.find({ userId, status: { $in: ['pending', 'in-progress'] } }).sort({ dueDate: 1 }).limit(5),
+            Note.find({ userId }),
+            Reminder.find({ userId }),
+            Todo.find({
+                userId,
+                status: 'completed',
+                completedAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+            }).sort({ completedAt: -1 }).limit(3),
+            Todo.find({
+                userId,
+                status: { $in: ['pending', 'in-progress'] },
+                dueDate: { $gte: new Date() }
+            }).sort({ dueDate: 1 }).limit(3)
+        ]);
+
         const lowAttendance = attendance.filter(a => a.percentage < 75);
         const safeSubjects = attendance.filter(a => a.percentage >= 75).length;
         const atRiskSubjects = attendance.filter(a => a.percentage < 75 && a.percentage >= 60).length;
-        
-        // Get upcoming reminders
-        const upcomingReminders = await Reminder.find({
-            userId,
-            dueDate: { $gte: new Date() },
-            status: 'pending'
-        }).sort({ dueDate: 1 }).limit(5);
-        
-        // Get DSA progress
-        const dsaProgress = await Progress.findOne({
-            userId,
-            category: 'dsa',
-            topic: 'DSA Overall'
+
+        // Enhance attendance data with safeBunks
+        const attendanceSummary = attendance.map(a => {
+            const obj = a.toObject({ virtuals: true });
+            obj.safeBunks = typeof a.safeBunks === 'function' ? a.safeBunks() : 0;
+            return obj;
         });
-        
-        // Get recent todos
-        const todos = await Todo.find({ 
-            userId,
-            status: { $in: ['pending', 'in-progress'] }
-        }).sort({ dueDate: 1 }).limit(5);
-        
+
         // Get notes stats
-        const notes = await Note.find({ userId });
         const notesStats = {
-            totalNotes: notes.length,
-            recentUploads: notes.filter(n => {
+            totalNotes: allNotes.length,
+            recentUploads: allNotes.filter(n => {
                 const oneWeekAgo = new Date();
                 oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
                 return n.uploadDate > oneWeekAgo;
             }).length,
-            totalSize: Math.round(notes.reduce((sum, n) => sum + (n.fileSize || 0), 0) / 1024 / 1024)
+            totalSize: Math.round(allNotes.reduce((sum, n) => sum + (n.fileSize || 0), 0) / 1024 / 1024)
         };
-        
+
         // Get reminders stats
-        const allReminders = await Reminder.find({ userId });
         const remindersStats = {
             total: allReminders.length,
             pending: allReminders.filter(r => r.status === 'pending').length,
             overdue: allReminders.filter(r => r.status === 'overdue').length,
             completed: allReminders.filter(r => r.status === 'completed').length,
-            upcoming: allReminders.filter(r => 
-                r.status === 'pending' && 
-                r.dueDate > new Date() && 
+            upcoming: allReminders.filter(r =>
+                r.status === 'pending' &&
+                r.dueDate > new Date() &&
                 r.dueDate < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
             ).length,
             highPriority: allReminders.filter(r => r.priority === 'high').length
         };
-        
-        // Get recent activity
-        const recentCompleted = await Todo.find({
-            userId,
-            status: 'completed',
-            completedAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
-        }).sort({ completedAt: -1 }).limit(3);
-        
-        const recentNotes = await Note.find({ userId })
-            .sort({ uploadDate: -1 })
-            .limit(3);
-        
-        const upcomingTasks = await Todo.find({
-            userId,
-            status: { $in: ['pending', 'in-progress'] },
-            dueDate: { $gte: new Date() }
-        }).sort({ dueDate: 1 }).limit(3);
-        
-        // Wait for email stats to complete
-        const emailStats = await emailStatsPromise;
-        
+
+        const recentNotes = allNotes
+            .sort((a, b) => b.uploadDate - a.uploadDate)
+            .slice(0, 3);
+
         res.render('dashboard/index', {
             title: 'Dashboard',
             activeTab: 'dashboard',
-            attendance,
+            attendance: attendanceSummary,
             lowAttendance,
             safeSubjects,
             atRiskSubjects,
@@ -184,17 +179,17 @@ router.get('/', async (req, res) => {
             emailUnreadCount: emailStats.stats?.unread || 0,
             user: req.session.user,
             helpers: {
-                formatDate: function(date) {
+                formatDate: function (date) {
                     if (!date) return '';
                     return new Date(date).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric'
                     });
                 },
-                eq: function(a, b) {
+                eq: function (a, b) {
                     return a === b;
                 },
-                getTimeAgo: function(date) {
+                getTimeAgo: function (date) {
                     return getTimeAgo(date);
                 }
             }
@@ -209,7 +204,7 @@ router.get('/', async (req, res) => {
 function getTimeAgo(date) {
     if (!date) return 'recently';
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-    
+
     if (seconds < 60) return 'just now';
     if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
     if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
@@ -220,7 +215,7 @@ function getDueIn(date) {
     if (!date) return 'no deadline';
     const diff = new Date(date) - new Date();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
+
     if (diff < 0) return 'overdue';
     if (days === 0) return 'today';
     if (days === 1) return 'tomorrow';

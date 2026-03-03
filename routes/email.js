@@ -6,17 +6,12 @@ const GmailService = require('../utils/gmailService');
 const { EmailService } = require('../services/emailService');
 const SmartEmailConnector = require('../services/smartEmailService');
 
-// Authentication middleware
-const requireAuth = (req, res, next) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-    next();
-};
+const { isAuthenticated } = require('../middlewares/auth');
+const constants = require('../config/constants');
 
-router.use(requireAuth);
+router.use(isAuthenticated);
 
-const gmailRedirectUri = process.env.GMAIL_REDIRECT_URI || 'http://localhost:3000/email/auth/callback';
+const gmailRedirectUri = constants.GOOGLE.GMAIL_REDIRECT_URI;
 
 const oAuth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -24,21 +19,7 @@ const oAuth2Client = new google.auth.OAuth2(
     gmailRedirectUri
 );
 
-// ==================== ADD THIS MIDDLEWARE ====================
-// Authentication middleware
-const isAuthenticated = (req, res, next) => {
-    console.log('=== AUTH MIDDLEWARE CHECK ===');
-    console.log('Path:', req.path);
-    console.log('Session user:', req.session?.user?.username);
-
-    if (req.session && req.session.user) {
-        console.log('✅ User authenticated:', req.session.user.username);
-        return next();
-    }
-    // Redirect to login if not authenticated
-    console.log('❌ User not authenticated, redirecting to login');
-    res.redirect('/login');
-};
+// Email Routes Configuration
 
 // Get email notifications
 router.get('/', async (req, res) => {
@@ -274,7 +255,11 @@ router.post('/disconnect', async (req, res) => {
 // Auto-sync endpoint (for cron jobs)
 router.post('/auto-sync', async (req, res) => {
     try {
-        const { userId, tokens } = req.body;
+        const { userId, tokens, apiKey } = req.body;
+
+        if (apiKey !== process.env.INTERNAL_API_KEY) {
+            return res.status(403).json({ success: false, message: 'Forbidden: Invalid API Key' });
+        }
 
         if (!userId || !tokens) {
             return res.status(400).json({ success: false, message: 'Missing parameters' });

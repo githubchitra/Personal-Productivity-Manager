@@ -8,10 +8,17 @@ const MongoStore = require('connect-mongo');
 const path = require('path');
 const handlebars = require('handlebars');
 const handlebarsLayouts = require('handlebars-layouts')(handlebars);
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
+const cookieParser = require('cookie-parser');
+const constants = require('./config/constants');
+const { isAuthenticated } = require('./middlewares/auth');
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = constants.PORT;
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -23,28 +30,35 @@ const notesRoutes = require('./routes/notes');
 const remindersRoutes = require('./routes/reminders');
 const emailRoutes = require('./routes/email');
 
-// ==================== ADD THIS MIDDLEWARE ====================
-// Authentication middleware
-const isAuthenticated = (req, res, next) => {
-    console.log('=== AUTH MIDDLEWARE CHECK ===');
-    console.log('Path:', req.path);
-    console.log('Session user:', req.session?.user?.username);
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: constants.SECURITY.RATE_LIMIT_WINDOW,
+    max: constants.SECURITY.RATE_LIMIT_MAX,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: 'Too many requests from this IP, please try again after 15 minutes'
+});
 
-    if (req.session && req.session.user) {
-        console.log('✅ User authenticated:', req.session.user.username);
-        return next();
-    }
-    // Redirect to login if not authenticated
-    console.log('❌ User not authenticated, redirecting to login');
-    res.redirect('/login');
-};
+// Security Middlewares
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            "img-src": ["'self'", "data:", "https:", "*.googleusercontent.com"],
+            "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdn.plot.ly"],
+        },
+    },
+}));
+app.use(limiter);
+app.use(mongoSanitize());
+app.use(hpp());
+app.use(cookieParser());
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/college-portal', {
+mongoose.connect(constants.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000, // 5 second timeout
-    connectTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 5000,
 });
 
 mongoose.connection.on('connected', () => {
@@ -663,17 +677,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Session configuration
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'college-portal-secret-key-2024-change-this',
-    resave: false, // Changed to false
-    saveUninitialized: false, // Changed to false
+    secret: constants.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
     store: MongoStore.create({
-        mongoUrl: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/college-portal',
-        ttl: 24 * 60 * 60, // 1 day
-        autoRemove: 'native',
+        mongoUrl: constants.MONGODB_URI,
+        ttl: 24 * 60 * 60,
     }),
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-        secure: false, // Set to true if using HTTPS
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+        secure: constants.NODE_ENV === 'production',
         httpOnly: true,
         sameSite: 'lax'
     }
@@ -782,8 +795,5 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, () => {
     console.log(`✅ Server running on http://localhost:${PORT}`);
-    console.log(`📊 MongoDB URI: ${process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/college-portal'}`);
-    console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`📊 MongoDB Mode: ${constants.NODE_ENV}`);
 });
-
-console.log('hiiiiiiiiiiiiiiiiiiiiiiiii')
